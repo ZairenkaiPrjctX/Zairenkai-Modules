@@ -1,0 +1,13 @@
+Zairenkai-Modules
+Copyright 2026 ZairenkaiPrjctX contributors
+
+This product includes software developed by the ZairenkaiPrjctX project, licensed under the
+Apache License, Version 2.0 (see LICENSE).
+
+The module scripts in module/ come from Zairenkai-Core and Zairenkai-FAS, which have the same
+owner and licence, and were merged into one module here. The Magisk installer stub in
+module/META-INF is independently written; it calls Magisk's documented installer interface
+(util_functions.sh, install_module) and contains no Magisk code.
+
+The module zip carries each component's own LICENSE, NOTICE and THIRD_PARTY.md under
+licenses/<component>/. No third-party source code is included in this repository.

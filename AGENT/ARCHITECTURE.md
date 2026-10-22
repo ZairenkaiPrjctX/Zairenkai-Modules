@@ -2,18 +2,39 @@
 
 > Owned by this repository. Document only what inspected code supports, citing file paths.
 
-## Status
+## Overview
 
-**Unknown.** No source code existed on 2026-10-18 (GitHub API 2026-10-18: repository size 0, no branches, no commits; ls-remote returned no refs.). There is no architecture
-to describe yet, and nothing here should be read as a design decision.
+Assembles one Magisk/KernelSU/APatch module, `zairenkai`, from component builds of
+Zairenkai-Core (zcored) and Zairenkai-FAS (zfasd).
 
-## When the first code lands, fill in
+## Components
 
-1. **Overview:** one paragraph on what the system does, from the code's entry points.
-2. **Components:** table of directory/module → responsibility → evidence path.
-3. **Entry points:** binaries, scripts, services, module init functions.
-4. **Data flow:** inputs, outputs, formats, persistence.
-5. **External interfaces:** APIs, device/kernel interfaces, network endpoints, files consumed
-   or produced for other Zairenkai repositories (reference them; do not restate their specs).
-6. **Trust boundaries:** privilege levels, network exposure, secret usage.
-7. **Generated artifacts:** what is generated, by which command, and must not be hand-edited.
+| Path | Responsibility |
+|---|---|
+| `module/module.prop.in` | Module identity; version and description are filled in by the assembler |
+| `module/customize.sh` | Install-time checks (arm64, API 29, zcored present), data directories, permissions |
+| `module/service.sh` | Boot supervisor for zcored and zfasd (backoff, start limit, FAS restore after exit) |
+| `module/action.sh` | Read-only health of each component |
+| `module/uninstall.sh` | Stop, restore FAS, remove data |
+| `module/webroot/index.html` | KernelSU WebUI for FAS (fixed `zfasd ctl` commands only) |
+| `module/META-INF/` | Magisk installer stub (`install_module`) |
+| `components.lock.json` | Module version; each component's repository, commit and binary |
+| `scripts/assemble.py` | Validates components against the lock and writes a reproducible zip |
+| `tests/test_assemble.py` | Assembler tests with stand-in components |
+
+## Data flow
+
+Core and FAS `scripts/build-android.sh` → `dist/<component>/` (binary, licences,
+`component.json`) → `scripts/assemble.py` → `dist/zairenkai-v<version>.zip` and `.sha256`.
+
+## Trust boundaries
+
+- The scripts run as root during install, boot and uninstall. They execute only the packaged
+  binaries, with fixed arguments.
+- The WebUI passes only fixed commands and a profile from a fixed list to `zfasd ctl`.
+- CI reads Core and FAS through a read-only GitHub App token; no secret enters the module.
+
+## Generated artifacts
+
+`dist/` from `scripts/assemble.py`; `module.prop` and `components.json` are generated inside
+the zip. Edit `module/module.prop.in` and `components.lock.json` instead.

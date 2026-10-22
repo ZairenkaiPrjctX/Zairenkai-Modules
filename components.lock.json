@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "module": {
+    "id": "zairenkai",
+    "name": "Zairenkai",
+    "version": "0.1.0"
+  },
+  "components": [
+    {
+      "name": "zairenkai-core",
+      "repository": "ZairenkaiPrjctX/Zairenkai-Core",
+      "commit": "4cdfe8e4f515840ba634c9de2197f46bfa516d5d",
+      "binary": "bin/zcored",
+      "summary": "zcored, the policy-driven control plane"
+    },
+    {
+      "name": "zairenkai-fas",
+      "repository": "ZairenkaiPrjctX/Zairenkai-FAS",
+      "commit": "99cfb18ba7f04753b3cda5534b8fa844d86db9d5",
+      "binary": "bin/zfasd",
+      "summary": "zfasd, frame-aware CPU frequency floors"
+    }
+  ]
+}

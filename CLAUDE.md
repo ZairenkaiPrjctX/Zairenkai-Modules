@@ -8,21 +8,29 @@ put detail in `AGENT/`.
 
 ## Current state (read first)
 
-As of 2026-10-18 this repository contained **no source code** (GitHub API 2026-10-18: repository size 0, no branches, no commits; ls-remote returned no refs.).
-Until that changes:
+This repository packages the **single Zairenkai root module, `zairenkai`** (Magisk, KernelSU,
+APatch): `module/` (scripts, installer stub, KernelSU WebUI), `components.lock.json` (Core and
+FAS pinned by commit) and `scripts/assemble.py`. Components are built in their own
+repositories and only assembled here. Architecture: `AGENT/ARCHITECTURE.md`. Nothing has run on
+a device yet (`docs/COMPATIBILITY.md`).
 
-- Do not describe an architecture, language, or toolchain as fact. Record discoveries in
-  `AGENT/PROJECT_CONTEXT.md` with evidence (file paths, manifests, command output).
-- When the first real code lands, update this file's **Commands** table and
-  `AGENT/ARCHITECTURE.md` in the same pull request.
+Non-negotiables in this repo:
+- One module (`zairenkai`), one data directory (`/data/adb/zairenkai/{core,fas}`). Do not add
+  separately installed Zairenkai modules.
+- Nothing is tuned at install time; daemons start at boot. No boot-image, partition or
+  persistent kernel change, ever, from these scripts.
+- A component enters the zip only through `assemble.py`, at the commit the lock pins, with
+  every file matching its `component.json`. Never commit binaries.
+- Uninstall restores what FAS changed before deleting its data.
 
 ## Commands
 
 | Purpose | Command | Status |
 |---|---|---|
-| Build | — | Not Configured |
-| Test | — | Not Configured |
-| Lint / format | — | Not Configured |
+| Assemble | `python3 scripts/assemble.py --component <core dist> --component <fas dist>` | Verified with stand-in components. Evidence: `tests/test_assemble.py`, 2026-10-22. Not yet run on real components (needs the CI `module` job) |
+| Test | `python3 -m unittest discover -s tests -v` | Verified. Evidence: 11 passed, 2026-10-22 |
+| Shell lint | `shellcheck -s sh module/*.sh module/META-INF/com/google/android/update-binary` | Verified. Evidence: clean, 2026-10-22 |
+| Workflow lint | `actionlint .github/workflows/ci.yml` | Verified. Evidence: clean (1.7.7), 2026-10-22 |
 | Validate agent foundation | `python3 <path-to-.github>/agent-foundation/scripts/validate_agent_setup.py .` | Configured |
 
 Only list commands that exist in this repository. Never invent one.
