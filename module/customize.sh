@@ -21,6 +21,12 @@ chmod 0700 "$DATA" "$DATA/core" "$DATA/fas"
 for c in core fas; do
   [ -f "$DATA/$c/config.toml" ] && ui_print "- Keeping existing $DATA/$c/config.toml"
 done
+# ztune (Zairenkai-Tuning, GPL-3.0) keeps its restore journal here; it never runs at install
+# or boot, only when Core or a person asks for a tuning operation.
+if [ -x "$MODPATH/bin/ztune" ]; then
+  mkdir -p "$DATA/tuning"
+  chmod 0700 "$DATA/tuning"
+fi
 # FAS writes cpufreq floors once enabled, so a first install leaves it switched off; the user
 # turns it on from the app or the WebUI (zfasd ctl enable), which saves the choice here.
 if [ -x "$MODPATH/bin/zfasd" ] && [ ! -f "$DATA/fas/config.toml" ]; then
@@ -37,5 +43,8 @@ ui_print "- Components (components.json):"
 sed -n 's/^ *"\(zairenkai-[a-z]*\)": *{ *"version": *"\([^"]*\)".*/    \1 \2/p' "$MODPATH/components.json" | while read -r line; do
   ui_print "  $line"
 done
-ui_print "- Data: $DATA (core/, fas/)"
+if [ -x "$MODPATH/bin/ztune" ]; then
+  ui_print "- ztune is GPL-3.0: licence in licenses/zairenkai-tuning/, source in source/zairenkai-tuning/"
+fi
+ui_print "- Data: $DATA (core/, fas/, tuning/)"
 ui_print "- Read-only report: $MODPATH/bin/zcored discover"

@@ -7,6 +7,8 @@
 MODDIR=${0%/*}
 DATA=/data/adb/zairenkai
 mkdir -p "$DATA/core" "$DATA/fas" && chmod 0700 "$DATA" "$DATA/core" "$DATA/fas"
+# ztune is not a daemon and is not started here: nothing is tuned at boot. Its journal from an
+# earlier boot is discarded by ztune itself, never replayed.
 
 until [ "$(getprop sys.boot_completed)" = "1" ]; do sleep 5; done
 sleep 5

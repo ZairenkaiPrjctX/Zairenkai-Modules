@@ -12,3 +12,8 @@ if [ -x "$MODDIR/bin/zfasd" ]; then
   "$MODDIR/bin/zfasd" ctl --dir "$DATA/fas" status 2>&1 | head -c 4000
   echo
 fi
+if [ -x "$MODDIR/bin/ztune" ]; then
+  echo "ztune (read-only):"
+  "$MODDIR/bin/ztune" --state-dir "$DATA/tuning" capabilities 2>&1 | head -c 4000
+  echo
+fi

@@ -3,12 +3,18 @@
 # Copyright 2026 ZairenkaiPrjctX contributors
 """Assemble the single Zairenkai root module from its component builds.
 
-Each component repository (Zairenkai-Core, Zairenkai-FAS) builds a directory with its binary,
-its licence files and a component.json (format 1) naming the commit and the SHA-256 of every
-file. This script accepts a component only when it is exactly what components.lock.json pins:
+Each component repository (Zairenkai-Core, Zairenkai-FAS, Zairenkai-Tuning) builds a directory
+with its binary, its licence files and a component.json (format 1) naming the commit and the
+SHA-256 of every file. This script accepts a component only when it is exactly what components.lock.json pins:
 same name, same commit, Android arm64 target, every file present with the declared hash, and
 no undeclared file. It then packages module/ plus the components into one zip with fixed
 timestamps and order, so the same inputs give the same bytes.
+
+A component whose lock entry names a GPL licence (Zairenkai-Tuning, GPL-3.0-only) must declare
+the same licence in its component.json and ship its Corresponding Source: a source archive
+under source/ and a SOURCE.md saying how to rebuild. Both go into the module (source/<name>/,
+licenses/<name>/SOURCE.md) next to the binary; without them assembly fails. The zip is an
+aggregate of separate programs; each keeps its own licence.
 
 Usage: assemble.py [--lock components.lock.json] --component DIR [--component DIR ...]
                    [--out dist]
@@ -25,6 +31,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 TARGET = "aarch64-linux-android"
 LICENCE_FILES = ("LICENSE", "NOTICE", "THIRD_PARTY.md")
+SOURCE_INFO = "SOURCE.md"
 ZIP_DATE = (2000, 1, 1, 0, 0, 0)
 MAX_COMPONENT_FILE = 64 * 1024 * 1024
 
@@ -56,7 +63,14 @@ def load_lock(path):
             raise AssemblyError(f"{path}: {c['name']}: commit must be a full SHA-1")
         if not re.fullmatch(r"bin/[a-z0-9_]+", c["binary"]):
             raise AssemblyError(f"{path}: {c['name']}: binary must be bin/<name>")
+        if "license" in c and not re.fullmatch(r"[A-Za-z0-9.+-]+", c["license"]):
+            raise AssemblyError(f"{path}: {c['name']}: license must be an SPDX identifier")
     return lock
+
+
+def copyleft(pinned):
+    """Components whose licence requires shipping source with the binary."""
+    return pinned.get("license", "").startswith(("GPL-", "AGPL-", "LGPL-"))
 
 
 def check_component(directory, pinned):
@@ -83,6 +97,17 @@ def check_component(directory, pinned):
     if not isinstance(files, dict):
         raise AssemblyError(f"{name}: no file list")
     required = {pinned["binary"], *LICENCE_FILES}
+    if copyleft(pinned):
+        if m.get("license") != pinned["license"]:
+            raise AssemblyError(
+                f"{name}: licence {m.get('license')!r}, but components.lock.json says {pinned['license']!r}"
+            )
+        source = m.get("source")
+        if not isinstance(source, str) or not re.fullmatch(r"source/[A-Za-z0-9._-]+\.tar\.gz", source):
+            raise AssemblyError(f"{name}: {pinned['license']} component without a source archive")
+        if pinned["commit"] not in source:
+            raise AssemblyError(f"{name}: source archive {source} is not named for commit {pinned['commit']}")
+        required |= {source, SOURCE_INFO}
     if missing := required - files.keys():
         raise AssemblyError(f"{name}: component.json does not declare {sorted(missing)}")
     present = {
@@ -137,6 +162,9 @@ def components_json(lock, manifests):
             "binary": c["binary"],
             "sha256": m["files"][c["binary"]],
         }
+        if copyleft(c):
+            entry["license"] = c["license"]
+            entry["source"] = f"source/{c['name']}/{Path(m['source']).name}"
         lines.append(f'    "{c["name"]}": {json.dumps(entry, separators=(", ", ": "))}')
     body = ",\n".join(lines)
     return (
@@ -168,6 +196,11 @@ def entries(lock, components, manifests):
         out.append((c["binary"], (d / c["binary"]).read_bytes(), True))
         for f in LICENCE_FILES:
             out.append((f"licenses/{c['name']}/{f}", (d / f).read_bytes(), False))
+        if copyleft(c):
+            m = manifests[c["name"]]
+            src = m["source"]
+            out.append((f"licenses/{c['name']}/{SOURCE_INFO}", (d / SOURCE_INFO).read_bytes(), False))
+            out.append((f"source/{c['name']}/{Path(src).name}", (d / src).read_bytes(), False))
     names = [e[0] for e in out]
     if len(names) != len(set(names)):
         raise AssemblyError("two inputs map to the same path in the module")

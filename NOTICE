@@ -11,3 +11,9 @@ module/META-INF is independently written; it calls Magisk's documented installer
 
 The module zip carries each component's own LICENSE, NOTICE and THIRD_PARTY.md under
 licenses/<component>/. No third-party source code is included in this repository.
+
+The module zip also contains ztune from ZairenkaiPrjctX/Zairenkai-Tuning, a separate program
+licensed under the GNU General Public License version 3 only, which adapts code from
+RvSystem-Monitor, Lynx and KonaBess (see licenses/zairenkai-tuning/NOTICE). Its complete
+Corresponding Source is shipped in the zip under source/zairenkai-tuning/. Packaging it in the
+same zip is aggregation: the GPL applies to ztune, not to the Apache-2.0 programs and scripts.

@@ -30,10 +30,11 @@ jobs:
       - run: shellcheck -s sh module/*.sh module/META-INF/com/google/android/update-binary
       - run: python3 -m unittest discover -s tests -v
 
-  # The single zairenkai module: Core and FAS are built at the commits components.lock.json pins
-  # (each with its own scripts/build-android.sh), then assembled here.
+  # The single zairenkai module: Core, FAS and Tuning are built at the commits
+  # components.lock.json pins (each with its own scripts/build-android.sh), then assembled here.
+  # Tuning (GPL-3.0) builds its Corresponding Source archive with the binary.
   module:
-    name: zairenkai module (Core + FAS at their locked commits)
+    name: zairenkai module (Core + FAS + Tuning at their locked commits)
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     needs: [checks]
@@ -67,7 +68,7 @@ jobs:
           app-id: ${{ vars.ZAIRENKAI_CI_APP_ID }}
           private-key: ${{ secrets.ZAIRENKAI_CI_APP_PRIVATE_KEY }}
           owner: ZairenkaiPrjctX
-          repositories: Zairenkai-Core,Zairenkai-FAS
+          repositories: Zairenkai-Core,Zairenkai-FAS,Zairenkai-Tuning
           permission-contents: read
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -83,6 +84,13 @@ jobs:
           path: components/fas
           token: ${{ steps.token.outputs.token }}
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ZairenkaiPrjctX/Zairenkai-Tuning
+          ref: ${{ steps.lock.outputs.tuning }}
+          path: components/tuning
+          token: ${{ steps.token.outputs.token }}
+          persist-credentials: false
       - name: Rust and Android NDK (checksum verified)
         run: |
           rustup toolchain install "$RUST_STABLE" --profile minimal -t aarch64-linux-android
@@ -96,11 +104,13 @@ jobs:
         run: |
           components/core/scripts/build-android.sh
           components/fas/scripts/build-android.sh
+          components/tuning/scripts/build-android.sh
       - name: Assemble and check the module
         run: |
           python3 scripts/assemble.py \
             --component components/core/dist/zairenkai-core \
             --component components/fas/dist/zairenkai-fas \
+            --component components/tuning/dist/zairenkai-tuning \
             --out dist
           unzip -l dist/zairenkai-v*.zip
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

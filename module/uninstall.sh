@@ -1,12 +1,18 @@
 #!/system/bin/sh
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 ZairenkaiPrjctX contributors
-# Stop zfasd and restore the settings it changed, stop zcored (it ends temporary overrides and
+# Restore what ztune changed this boot (I/O scheduler, GPU governor; only nodes that still hold
+# the value it wrote), stop zfasd and restore the settings it changed, stop zcored (it ends temporary overrides and
 # restores their baselines on SIGTERM), then remove the data. If zfasd cannot restore, its data
 # is kept so a manual restore can retry; frequency floors do not survive a reboot anyway.
 MODDIR=${0%/*}
 DATA=/data/adb/zairenkai
 keep_fas=""
+if [ -x "$MODDIR/bin/ztune" ]; then
+  if ! "$MODDIR/bin/ztune" --state-dir "$DATA/tuning" restore >/dev/null 2>&1; then
+    echo "zairenkai: ztune restore failed; the values reset at the next reboot" >>/cache/zairenkai-uninstall.log 2>/dev/null
+  fi
+fi
 if [ -x "$MODDIR/bin/zfasd" ]; then
   for pid in $(pidof zfasd); do kill -TERM "$pid" 2>/dev/null; done
   sleep 2
