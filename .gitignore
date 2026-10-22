@@ -10,3 +10,8 @@
 *.p12
 *.jks
 *.keystore
+
+# Build outputs
+dist/
+components/
+__pycache__/

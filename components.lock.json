@@ -1,0 +1,32 @@
+{
+  "format": 1,
+  "module": {
+    "id": "zairenkai",
+    "name": "Zairenkai",
+    "version": "0.2.0"
+  },
+  "components": [
+    {
+      "name": "zairenkai-core",
+      "repository": "ZairenkaiPrjctX/Zairenkai-Core",
+      "commit": "8931cbb6aa3e70dc0197c2840b61842039b03626",
+      "binary": "bin/zcored",
+      "summary": "zcored, the policy-driven control plane"
+    },
+    {
+      "name": "zairenkai-fas",
+      "repository": "ZairenkaiPrjctX/Zairenkai-FAS",
+      "commit": "99cfb18ba7f04753b3cda5534b8fa844d86db9d5",
+      "binary": "bin/zfasd",
+      "summary": "zfasd, frame-aware CPU frequency floors"
+    },
+    {
+      "name": "zairenkai-tuning",
+      "repository": "ZairenkaiPrjctX/Zairenkai-Tuning",
+      "commit": "0c226b27771c0e0274feb6435b36c8d90487a814",
+      "binary": "bin/ztune",
+      "license": "GPL-3.0-only",
+      "summary": "ztune, telemetry and validated tuning (GPL-3.0)"
+    }
+  ]
+}

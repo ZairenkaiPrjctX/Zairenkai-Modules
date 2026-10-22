@@ -1,0 +1,7 @@
+# Written by the zairenkai installer on first install: FAS starts switched off, so nothing is
+# boosted until you turn it on (Zairenkai app, KernelSU WebUI, or zfasd ctl enable). That
+# choice is saved here and kept across updates.
+schema_version = 1
+
+[general]
+enabled = false

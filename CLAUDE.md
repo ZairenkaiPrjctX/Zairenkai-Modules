@@ -8,21 +8,33 @@ put detail in `AGENT/`.
 
 ## Current state (read first)
 
-As of 2026-10-18 this repository contained **no source code** (GitHub API 2026-10-18: repository size 0, no branches, no commits; ls-remote returned no refs.).
-Until that changes:
+This repository packages the **single Zairenkai root module, `zairenkai`** (Magisk, KernelSU,
+APatch): `module/` (scripts, installer stub, KernelSU WebUI), `components.lock.json` (Core,
+FAS and Tuning pinned by commit) and `scripts/assemble.py`. Components are built in their own
+repositories and only assembled here. Architecture: `AGENT/ARCHITECTURE.md`. Nothing has run on
+a device yet (`docs/COMPATIBILITY.md`).
 
-- Do not describe an architecture, language, or toolchain as fact. Record discoveries in
-  `AGENT/PROJECT_CONTEXT.md` with evidence (file paths, manifests, command output).
-- When the first real code lands, update this file's **Commands** table and
-  `AGENT/ARCHITECTURE.md` in the same pull request.
+Non-negotiables in this repo:
+- One module (`zairenkai`), one data directory (`/data/adb/zairenkai/{core,fas,tuning}`). Do not
+  add separately installed Zairenkai modules, also not for a component under another licence.
+- Nothing is tuned at install time; daemons start at boot. FAS starts switched off on a first
+  install (`module/defaults/fas-config.toml`) until the user enables it. No boot-image,
+  partition or persistent kernel change, ever, from these scripts.
+- A component enters the zip only through `assemble.py`, at the commit the lock pins, with
+  every file matching its `component.json`. Never commit binaries.
+- Uninstall restores what FAS and ztune changed before deleting their data.
+- ztune (Zairenkai-Tuning) is GPL-3.0: it ships with its licence and Corresponding Source
+  (`assemble.py` enforces it), stays a separate program, and is never run at install or boot.
+  Module scripts never link, copy or patch it.
 
 ## Commands
 
 | Purpose | Command | Status |
 |---|---|---|
-| Build | — | Not Configured |
-| Test | — | Not Configured |
-| Lint / format | — | Not Configured |
+| Assemble | `python3 scripts/assemble.py --component <core dist> --component <fas dist> --component <tuning dist>` | Verified. Evidence: real arm64 components built locally with NDK r27d at the locked commits (Core 8931cbb, FAS 99cfb18, Tuning 0c226b2): `zairenkai-v0.2.0.zip`, 26 entries, 2026-10-22. The CI `module` job (no CI GitHub App needed since 2026-10-22) has not run yet |
+| Test | `python3 -m unittest discover -s tests -v` | Verified. Evidence: 17 passed, 2026-10-22 |
+| Shell lint | `shellcheck -s sh module/*.sh module/META-INF/com/google/android/update-binary` | Verified. Evidence: clean, 2026-10-22 |
+| Workflow lint | `actionlint .github/workflows/ci.yml` | Verified. Evidence: clean, 2026-10-22 |
 | Validate agent foundation | `python3 <path-to-.github>/agent-foundation/scripts/validate_agent_setup.py .` | Configured |
 
 Only list commands that exist in this repository. Never invent one.
