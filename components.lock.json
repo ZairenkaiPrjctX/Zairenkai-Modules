@@ -9,7 +9,7 @@
     {
       "name": "zairenkai-core",
       "repository": "ZairenkaiPrjctX/Zairenkai-Core",
-      "commit": "6fd0f79a4c6f1595a81fa56e5aba6d78092105b3",
+      "commit": "8931cbb6aa3e70dc0197c2840b61842039b03626",
       "binary": "bin/zcored",
       "summary": "zcored, the policy-driven control plane"
     },
@@ -23,7 +23,7 @@
     {
       "name": "zairenkai-tuning",
       "repository": "ZairenkaiPrjctX/Zairenkai-Tuning",
-      "commit": "450a624f6f0e432355f0cd0c7652433d7b024650",
+      "commit": "0c226b27771c0e0274feb6435b36c8d90487a814",
       "binary": "bin/ztune",
       "license": "GPL-3.0-only",
       "summary": "ztune, telemetry and validated tuning (GPL-3.0)"

@@ -31,7 +31,7 @@ Non-negotiables in this repo:
 
 | Purpose | Command | Status |
 |---|---|---|
-| Assemble | `python3 scripts/assemble.py --component <core dist> --component <fas dist> --component <tuning dist>` | Verified. Evidence: real arm64 components built locally with NDK r27d at the locked commits (Core 6fd0f79, FAS 99cfb18, Tuning 450a624): `zairenkai-v0.2.0.zip`, 26 entries, 2026-10-22. The CI `module` job has not run yet (CI GitHub App not configured here) |
+| Assemble | `python3 scripts/assemble.py --component <core dist> --component <fas dist> --component <tuning dist>` | Verified. Evidence: real arm64 components built locally with NDK r27d at the locked commits (Core 8931cbb, FAS 99cfb18, Tuning 0c226b2): `zairenkai-v0.2.0.zip`, 26 entries, 2026-10-22. The CI `module` job has not run yet (CI GitHub App not configured here) |
 | Test | `python3 -m unittest discover -s tests -v` | Verified. Evidence: 17 passed, 2026-10-22 |
 | Shell lint | `shellcheck -s sh module/*.sh module/META-INF/com/google/android/update-binary` | Verified. Evidence: clean, 2026-10-22 |
 | Workflow lint | `actionlint .github/workflows/ci.yml` | Verified. Evidence: clean, 2026-10-22 |

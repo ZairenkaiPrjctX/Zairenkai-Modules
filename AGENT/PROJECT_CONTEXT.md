@@ -8,7 +8,7 @@
 | Field | Value | Status |
 |---|---|---|
 | Repository | `ZairenkaiPrjctX/Zairenkai-Modules` | Verified. Evidence: GitHub API |
-| Visibility | private | Verified. Evidence: GitHub API |
+| Visibility | public | Verified. Evidence: `list_repos`, 2026-10-22 |
 | Default branch | `dev` | Verified. Evidence: `gh repo list`, 2026-10-22 |
 | Purpose | Packages the single `zairenkai` root module from the Core, FAS and Tuning builds | Verified. Evidence: maintainer decision 2026-10-22; `module/`, `scripts/assemble.py` |
 | Licence | Apache-2.0 (`LICENSE`, `NOTICE`). The zip is an aggregate: it also carries ztune under GPL-3.0-only with its source | Verified. Evidence: repository tree; `assemble.py`; maintainer decision 2026-10-22 (separate GPL component) |
@@ -18,7 +18,7 @@
 | Area | Location | Status |
 |---|---|---|
 | Module scripts, installer stub, KernelSU WebUI | `module/` | Verified: shellcheck clean, 2026-10-22. **Unverified** on a device |
-| Component lock | `components.lock.json` | Verified: Core `6fd0f79`, FAS `99cfb18`, Tuning `450a624` (topic branch `ccr-63f8aa87-1b0paj` of each), module 0.2.0, 2026-10-22 |
+| Component lock | `components.lock.json` | Verified: Core `8931cbb`, FAS `99cfb18`, Tuning `0c226b2` (topic branch `ccr-63f8aa87-1b0paj` of each), module 0.2.0, 2026-10-22 |
 | Assembler | `scripts/assemble.py` | Verified with stand-in components (17 tests, incl. the GPL source requirement), and on real arm64 components built locally with NDK r27d: zip of 26 entries, 2026-10-22 |
 | CI | `.github/workflows/ci.yml` | actionlint clean. **Unverified** on GitHub; the `module` job needs the CI GitHub App configured in this repository |
 | Docs | `README.md`, `docs/` | Verified: files present |
