@@ -52,44 +52,23 @@ jobs:
               assert re.fullmatch(r"[0-9a-f]{40}", c["commit"]), c["name"]
               print(f'{c["name"].removeprefix("zairenkai-")}={c["commit"]}')
           EOF
-      - name: Require the CI GitHub App
-        env:
-          APP_ID: ${{ vars.ZAIRENKAI_CI_APP_ID }}
-          HAS_KEY: ${{ secrets.ZAIRENKAI_CI_APP_PRIVATE_KEY != '' }}
-        run: |
-          if [ -z "$APP_ID" ] || [ "$HAS_KEY" != "true" ]; then
-            echo "::error::Module build blocked: the CI GitHub App is not configured in this repository (variable ZAIRENKAI_CI_APP_ID, secret ZAIRENKAI_CI_APP_PRIVATE_KEY). See docs/BUILDING.md."
-            exit 1
-          fi
-      - name: Read-only token for the component repositories
-        id: token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        with:
-          app-id: ${{ vars.ZAIRENKAI_CI_APP_ID }}
-          private-key: ${{ secrets.ZAIRENKAI_CI_APP_PRIVATE_KEY }}
-          owner: ZairenkaiPrjctX
-          repositories: Zairenkai-Core,Zairenkai-FAS,Zairenkai-Tuning
-          permission-contents: read
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ZairenkaiPrjctX/Zairenkai-Core
           ref: ${{ steps.lock.outputs.core }}
           path: components/core
-          token: ${{ steps.token.outputs.token }}
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ZairenkaiPrjctX/Zairenkai-FAS
           ref: ${{ steps.lock.outputs.fas }}
           path: components/fas
-          token: ${{ steps.token.outputs.token }}
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ZairenkaiPrjctX/Zairenkai-Tuning
           ref: ${{ steps.lock.outputs.tuning }}
           path: components/tuning
-          token: ${{ steps.token.outputs.token }}
           persist-credentials: false
       - name: Rust and Android NDK (checksum verified)
         run: |

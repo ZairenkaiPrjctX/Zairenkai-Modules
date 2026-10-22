@@ -50,19 +50,9 @@ and bump `module.version` there.
   checksum-verified NDK r27d, assembles the module and uploads it as the artifact
   `zairenkai-module-unsigned-not-for-distribution`.
 
-The `module` job reads the private component repositories through the organization's CI GitHub
-App: the repository variable `ZAIRENKAI_CI_APP_ID` and the secret
-`ZAIRENKAI_CI_APP_PRIVATE_KEY` must be set in this repository, and the App must be installed
-on Zairenkai-Core, Zairenkai-FAS and Zairenkai-Tuning. Without them the job fails and says so.
-
-The maintainer can set both with the script Zairenkai-App already uses for the same App (it
-checks the key and the App's permissions first, and reads the key from a file, never the
-command line):
-
-```sh
-ZAIRENKAI_APP_REPO=ZairenkaiPrjctX/Zairenkai-Modules \
-  ../Zairenkai-App/integration/scripts/setup-actions-secrets.sh app <App ID> <private key PEM>
-```
+The component repositories are public (2026-10-22), so the `module` job checks them out at the
+locked commits with the workflow's own read-only token: no CI GitHub App, variable or secret is
+needed. The job fails if a locked commit cannot be fetched.
 
 A component built by a `pull_request` run of Core or FAS records the PR's merge commit, which
 the lock does not pin, so `assemble.py` refuses it. Use a component built at the locked commit
