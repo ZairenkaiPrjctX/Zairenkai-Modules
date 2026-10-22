@@ -27,7 +27,9 @@ installer; zart and zthermal are app libraries and are not part of the module.
 - **Install** (`customize.sh`): refuses non-arm64 devices, API < 29 and a package without
   `bin/zcored`; creates `/data/adb/zairenkai/{core,fas}` (0700); keeps existing configuration;
   warns when the earlier separate `zairenkai_core` / `zairenkai_fas` modules are installed.
-  Nothing is tuned at install time.
+  Nothing is tuned at install time. On a first install FAS gets a configuration with
+  `enabled = false` (`defaults/fas-config.toml`): zfasd runs but boosts nothing until the user
+  enables it from the app or the WebUI, which saves the choice.
 - **Boot** (`service.sh`): after `sys.boot_completed`, supervises zcored and zfasd, each with
   backoff (5 s to 300 s) and a start limit (5 starts in 10 minutes, then `<data>/failed`).
   After any zfasd exit it runs `zfasd restore`.

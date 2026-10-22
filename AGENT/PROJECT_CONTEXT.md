@@ -19,7 +19,7 @@
 |---|---|---|
 | Module scripts, installer stub, KernelSU WebUI | `module/` | Verified: shellcheck clean, 2026-10-22. **Unverified** on a device |
 | Component lock | `components.lock.json` | Verified: Core `4cdfe8e`, FAS `99cfb18` (topic branch `ccr-63f8aa87-1b0paj` of each), 2026-10-22 |
-| Assembler | `scripts/assemble.py` | Verified with stand-in components. Evidence: 11 tests, 2026-10-22 |
+| Assembler | `scripts/assemble.py` | Verified with stand-in components (12 tests), and on the real arm64 components of Core CI run 39701977860 and FAS CI run 39701982927: zip of 19 entries, 2026-10-22 |
 | CI | `.github/workflows/ci.yml` | actionlint clean. **Unverified** on GitHub; the `module` job needs the CI GitHub App configured in this repository |
 | Docs | `README.md`, `docs/` | Verified: files present |
 

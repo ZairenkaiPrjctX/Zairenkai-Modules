@@ -42,6 +42,19 @@ App: the repository variable `ZAIRENKAI_CI_APP_ID` and the secret
 `ZAIRENKAI_CI_APP_PRIVATE_KEY` must be set in this repository, and the App must be installed
 on Zairenkai-Core and Zairenkai-FAS. Without them the job fails and says so.
 
+The maintainer can set both with the script Zairenkai-App already uses for the same App (it
+checks the key and the App's permissions first, and reads the key from a file, never the
+command line):
+
+```sh
+ZAIRENKAI_APP_REPO=ZairenkaiPrjctX/Zairenkai-Modules \
+  ../Zairenkai-App/integration/scripts/setup-actions-secrets.sh app <App ID> <private key PEM>
+```
+
+A component built by a `pull_request` run of Core or FAS records the PR's merge commit, which
+the lock does not pin, so `assemble.py` refuses it. Use a component built at the locked commit
+itself (a `workflow_dispatch` or push run on that commit), as the `module` job does.
+
 ## Tests
 
 ```sh

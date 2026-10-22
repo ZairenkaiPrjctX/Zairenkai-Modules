@@ -84,6 +84,17 @@ class AssembleTest(unittest.TestCase):
         self.assertEqual(mode["service.sh"], 0o755)
         self.assertEqual(mode["LICENSE"], 0o644)
 
+    def test_fas_starts_switched_off_on_first_install(self):
+        path, _ = self.build()
+        with zipfile.ZipFile(path) as z:
+            cfg = z.read("defaults/fas-config.toml").decode()
+            script = z.read("customize.sh").decode()
+        self.assertIn("[general]\nenabled = false\n", cfg)
+        self.assertIn("schema_version = 1\n", cfg)
+        # Copied only when no configuration exists, so the user's choice survives updates.
+        self.assertIn('[ ! -f "$DATA/fas/config.toml" ]', script)
+        self.assertIn('cp "$MODPATH/defaults/fas-config.toml" "$DATA/fas/config.toml"', script)
+
     def test_customize_sh_can_read_components_json(self):
         path, _ = self.build()
         with zipfile.ZipFile(path) as z:

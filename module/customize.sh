@@ -21,6 +21,13 @@ chmod 0700 "$DATA" "$DATA/core" "$DATA/fas"
 for c in core fas; do
   [ -f "$DATA/$c/config.toml" ] && ui_print "- Keeping existing $DATA/$c/config.toml"
 done
+# FAS writes cpufreq floors once enabled, so a first install leaves it switched off; the user
+# turns it on from the app or the WebUI (zfasd ctl enable), which saves the choice here.
+if [ -x "$MODPATH/bin/zfasd" ] && [ ! -f "$DATA/fas/config.toml" ]; then
+  cp "$MODPATH/defaults/fas-config.toml" "$DATA/fas/config.toml"
+  chmod 0600 "$DATA/fas/config.toml"
+  ui_print "- FAS is installed switched off: enable it in the Zairenkai app when you want it"
+fi
 
 set_perm_recursive "$MODPATH" 0 0 0755 0644
 for f in "$MODPATH"/bin/*; do set_perm "$f" 0 0 0755; done
