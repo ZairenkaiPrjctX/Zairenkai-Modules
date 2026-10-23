@@ -17,9 +17,9 @@
 
 | Area | Location | Status |
 |---|---|---|
-| Module scripts, installer stub, KernelSU WebUI | `module/` | Verified: shellcheck clean, 2026-10-22. **Unverified** on a device |
-| Component lock | `components.lock.json` | Verified: Core `345fc7f` and FAS `1c453db` (merge commits on `dev`, trees identical to the tested PR heads), Tuning `0c226b2` (topic branch: Tuning has no default branch yet), module 0.2.0, 2026-10-23 |
-| Assembler | `scripts/assemble.py` | Verified with stand-in components (17 tests, incl. the GPL source requirement), and on real arm64 components built locally with NDK r27d: zip of 26 entries, 2026-10-22 |
+| Module scripts, installer stub, KernelSU/APatch WebUI | `module/` | Verified on the host: shellcheck clean; `common.sh` (integrity check, status line, own-process lookup, data-directory guard) run under POSIX sh; WebUI builders and parsers run under Node on captured output; WebUI rendered in Chromium with a stand-in `ksu.exec`, 2026-10-23. **Unverified** on a device |
+| Component lock | `components.lock.json` | Verified: Core `345fc7f` and FAS `1c453db` (merge commits on `dev`, trees identical to the tested PR heads), Tuning `0c226b2` (topic branch: Tuning has no default branch yet), module 0.3.0 (integrity manifest, WebUI through Core), 2026-10-23 |
+| Assembler | `scripts/assemble.py` | Verified with stand-in components (18 tests, incl. the GPL source requirement and `SHA256SUMS`), and on real arm64 components built locally with NDK r27d: zip of 26 entries, 2026-10-22. With 0.3.0, a zip from the earlier real arm64 builds (Core `8931cbb`, FAS `99cfb18`, Tuning `0c226b2`, assembled against a scratch lock naming those commits) has 32 entries and `sha256sum -c SHA256SUMS` and `verify.sh` pass on its extracted files, 2026-10-23 |
 | CI | `.github/workflows/ci.yml` | Verified on GitHub. Evidence: run 39827725469 (`298311c`), `module` job and checks green, 2026-10-22; the public components are checked out without a token |
 | Docs | `README.md`, `docs/` | Verified: files present |
 
@@ -33,6 +33,14 @@
   Core `engine.rs` end-to-end test.
 - FAS is packaged in the distributed module by the maintainer's decision of 2026-10-22. Its
   hardware validation is still pending (Zairenkai-App `docs/integration/fas-provenance.md`).
+- Security (0.3.0): the zip carries `SHA256SUMS`; `customize.sh` aborts on a mismatch or an
+  unlisted file, `service.sh` starts nothing when a file changed (`integrity.log`, "Blocked" in the
+  manager), uninstall signals only this module's processes and never follows a symlinked data
+  directory, and the WebUI has a strict Content-Security-Policy and routes changes through Core.
+  `SHA256SUMS` proves integrity, not authenticity (the app's signed catalog does that). Verified
+  on the host. Evidence: `tests/test_scripts.py`, `tests/test_webui.py`, `docs/SECURITY.md`,
+  2026-10-23. **Unverified** on a device, including whether KernelSU's WebView delivers
+  `ksu.exec` results under the page's policy.
 
 ## Authoritative sources
 

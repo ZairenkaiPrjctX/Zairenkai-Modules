@@ -38,6 +38,10 @@ The assembler refuses a component whose commit is not the locked one, whose targ
 symlinked files, or that is missing, and a GPL component without its licence or source archive. The zip has fixed timestamps, order and permissions, so the
 same components give the same bytes.
 
+The zip carries `SHA256SUMS` (the `sha256sum` format) for every file the root manager extracts,
+that is every entry except `META-INF/`. The installer and the boot service check it
+([SECURITY.md](SECURITY.md)); `sha256sum -c SHA256SUMS` in an extracted copy checks it by hand.
+
 To move a component, build it at the new commit, update its entry in `components.lock.json`,
 and bump `module.version` there.
 
