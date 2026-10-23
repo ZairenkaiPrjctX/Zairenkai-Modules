@@ -1,12 +1,31 @@
 #!/system/bin/sh
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 ZairenkaiPrjctX contributors
-# Late-start service: supervise zcored and, when the package carries it, zfasd. Each daemon has
-# its own loop with exponential backoff (5 s up to 300 s) and a start limit (5 starts in 10
-# minutes), after which its loop gives up and leaves <data>/failed instead of restart-looping.
+# Late-start service: check the module's files, then supervise zcored and, when the package
+# carries it, zfasd. Each daemon has its own loop with exponential backoff (5 s up to 300 s) and
+# a start limit (5 starts in 10 minutes), after which its loop gives up and leaves
+# <data>/failed instead of restart-looping. The root manager shows the state in the module's
+# description.
 MODDIR=${0%/*}
-DATA=/data/adb/zairenkai
-mkdir -p "$DATA/core" "$DATA/fas" && chmod 0700 "$DATA" "$DATA/core" "$DATA/fas"
+umask 077
+# shellcheck source=module/common.sh
+. "$MODDIR/common.sh" || exit 1
+DATA=$ZR_DATA
+
+if ! zr_data_dirs; then
+  zr_status "$MODDIR" "Stopped: $DATA is a symlink or cannot be created"
+  exit 1
+fi
+# Nothing runs as root from a module whose files changed since install (a damaged update, a
+# replaced binary or script). The problems are listed in integrity.log; reinstalling the
+# module from the Zairenkai app clears it.
+if ! problems=$(zr_verify "$MODDIR" runtime); then
+  { date; printf '%s\n' "$problems"; } >"$DATA/integrity.log"
+  zr_status "$MODDIR" "Blocked: files changed since install, see $DATA/integrity.log"
+  exit 1
+fi
+rm -f "$DATA/integrity.log"
+zr_status "$MODDIR" "Starting"
 # ztune is not a daemon and is not started here: nothing is tuned at boot. Its journal from an
 # earlier boot is discarded by ztune itself, never replayed.
 
@@ -22,9 +41,7 @@ supervise() {
   starts=""
   delay=5
   while [ ! -f "$MODDIR/disable" ] && [ ! -f "$MODDIR/remove" ]; do
-    if [ -f "$log" ] && [ "$(stat -c %s "$log" 2>/dev/null || echo 0)" -gt 524288 ]; then
-      mv -f "$log" "$log.1"
-    fi
+    zr_rotate "$log"
     now=$(date +%s)
     recent=""
     count=0
@@ -52,8 +69,39 @@ supervise() {
   done
 }
 
+# report: keep the description current ("Running: zcored, zfasd"), rewriting module.prop only
+# when the text changes.
+report() {
+  shown=""
+  while [ ! -f "$MODDIR/remove" ]; do
+    up="" down=""
+    for d in zcored:core zfasd:fas; do
+      n=${d%%:*} c=${d#*:}
+      [ -x "$MODDIR/bin/$n" ] || continue
+      if [ -n "$(zr_own_pids "$n" "$MODDIR/bin/$n")" ]; then
+        up="$up${up:+, }$n"
+      elif [ -f "$DATA/$c/failed" ]; then
+        down="$down${down:+, }$n stopped after repeated crashes ($c/$n.log)"
+      else
+        down="$down${down:+, }$n restarting"
+      fi
+    done
+    if [ -z "$down" ]; then text="Running: $up | files verified"
+    elif [ -z "$up" ]; then text="Not running: $down"
+    else text="Running: $up | $down"
+    fi
+    if [ "$text" != "$shown" ]; then
+      zr_status "$MODDIR" "$text"
+      shown=$text
+    fi
+    sleep 30
+  done
+}
+
 supervise zcored "$DATA/core" "$MODDIR/bin/zcored" run --dir "$DATA/core" &
 if [ -x "$MODDIR/bin/zfasd" ]; then
   supervise zfasd "$DATA/fas" "$MODDIR/bin/zfasd" run --dir "$DATA/fas" &
 fi
+sleep 5
+report &
 wait

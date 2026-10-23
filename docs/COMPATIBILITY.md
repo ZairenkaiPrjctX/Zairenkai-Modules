@@ -10,6 +10,10 @@
 | APatch | Module format | **Unverified** on a device. |
 | Devices | Any; features depend on the kernel interfaces each daemon probes | **Unverified**: no device has run this module. |
 
-Verified so far, without a device: the scripts pass shellcheck, and the assembler is tested with
-stand-in components (`tests/test_assemble.py`). A module built from the real components exists
+Verified so far, without a device: the scripts pass shellcheck; the assembler is tested with
+stand-in components (`tests/test_assemble.py`); the integrity check, status line, process check
+and data-directory guard run under the host's POSIX `sh` (`tests/test_scripts.py`); the WebUI's
+command builders and parsers run under Node on captured daemon output (`tests/test_webui.py`).
+Whether KernelSU's WebView delivers `ksu.exec` results under the page's Content-Security-Policy
+is **Unverified** ([SECURITY.md](SECURITY.md#webui)). A module built from the real components exists
 only once the CI `module` job has run.

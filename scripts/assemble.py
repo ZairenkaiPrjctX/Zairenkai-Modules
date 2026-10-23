@@ -10,6 +10,11 @@ same name, same commit, Android arm64 target, every file present with the declar
 no undeclared file. It then packages module/ plus the components into one zip with fixed
 timestamps and order, so the same inputs give the same bytes.
 
+The zip carries SHA256SUMS (sha256sum format) for every file the root manager extracts, that is
+every entry except META-INF/. customize.sh refuses to install when a file does not match or an
+unlisted file is present, and service.sh starts nothing when a file changed after install
+(module/common.sh, docs/SECURITY.md).
+
 A component whose lock entry names a GPL licence (Zairenkai-Tuning, GPL-3.0-only) must declare
 the same licence in its component.json and ship its Corresponding Source: a source archive
 under source/ and a SOURCE.md saying how to rebuild. Both go into the module (source/<name>/,
@@ -33,6 +38,7 @@ TARGET = "aarch64-linux-android"
 LICENCE_FILES = ("LICENSE", "NOTICE", "THIRD_PARTY.md")
 SOURCE_INFO = "SOURCE.md"
 ZIP_DATE = (2000, 1, 1, 0, 0, 0)
+SUMS = "SHA256SUMS"
 MAX_COMPONENT_FILE = 64 * 1024 * 1024
 
 
@@ -204,7 +210,21 @@ def entries(lock, components, manifests):
     names = [e[0] for e in out]
     if len(names) != len(set(names)):
         raise AssemblyError("two inputs map to the same path in the module")
+    out.append((SUMS, sha256sums(out), False))
     return out
+
+
+def sha256sums(files):
+    """SHA256SUMS for the extracted module: every entry but META-INF/ (Magisk, KernelSU and APatch
+    do not extract it), sorted, in the format sha256sum -c reads."""
+    lines = []
+    for name, data, _ in sorted(files):
+        if name.startswith("META-INF/") or name == SUMS:
+            continue
+        if not re.fullmatch(r"[A-Za-z0-9._+/-]+", name) or ".." in name.split("/"):
+            raise AssemblyError(f"{name}: not a safe path for SHA256SUMS")
+        lines.append(f"{hashlib.sha256(data).hexdigest()}  {name}\n")
+    return "".join(lines).encode()
 
 
 def write_zip(path, files):

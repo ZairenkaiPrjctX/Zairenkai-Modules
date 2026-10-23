@@ -1,0 +1,17 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 ZairenkaiPrjctX contributors -->
+<!-- The Zairenkai mark (Zairenkai-App docs/brand/zairenkai-logo.svg): a Z whose diagonal is a
+     wave, with a spark. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 18 72 72" width="96" height="96">
+  <defs>
+    <linearGradient id="bg" x1="18" y1="18" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0E5568"/>
+      <stop offset="0.55" stop-color="#0B2433"/>
+      <stop offset="1" stop-color="#0A1218"/>
+    </linearGradient>
+  </defs>
+  <rect x="18" y="18" width="72" height="72" rx="20" fill="url(#bg)"/>
+  <path fill="none" stroke="#FFFFFF" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"
+        d="M36,40 L68,40 C60,46 62,53 54,55 C46,57 48,64 40,70 L72,70"/>
+  <path fill="#65D3FF" d="M71,27 Q71.6,30.4 75,31 Q71.6,31.6 71,35 Q70.4,31.6 67,31 Q70.4,30.4 71,27 Z"/>
+</svg>
