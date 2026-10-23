@@ -9,14 +9,14 @@
     {
       "name": "zairenkai-core",
       "repository": "ZairenkaiPrjctX/Zairenkai-Core",
-      "commit": "8931cbb6aa3e70dc0197c2840b61842039b03626",
+      "commit": "345fc7f8c9e192c6a5b7d4e4f923f3b2b3cf33fb",
       "binary": "bin/zcored",
       "summary": "zcored, the policy-driven control plane"
     },
     {
       "name": "zairenkai-fas",
       "repository": "ZairenkaiPrjctX/Zairenkai-FAS",
-      "commit": "99cfb18ba7f04753b3cda5534b8fa844d86db9d5",
+      "commit": "1c453db5b2ac6a49b18627408928d30ba51e063f",
       "binary": "bin/zfasd",
       "summary": "zfasd, frame-aware CPU frequency floors"
     },
