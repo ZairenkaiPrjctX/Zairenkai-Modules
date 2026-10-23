@@ -38,7 +38,7 @@ Non-negotiables in this repo:
 | Purpose | Command | Status |
 |---|---|---|
 | Assemble | `python3 scripts/assemble.py --component <core dist> --component <fas dist> --component <tuning dist>` | Verified. Evidence: real arm64 components built locally with NDK r27d at the locked commits (Core 345fc7f, FAS 1c453db, Tuning 0c226b2): `zairenkai-v0.2.0.zip`, 26 entries, identical to the previous build except `components.json`, 2026-10-23; CI `module` job green (run 39827725469, 2026-10-22) |
-| Test | `python3 -m unittest discover -s tests -v` (the WebUI check needs Node.js) | Verified. Evidence: 42 passed, 2026-10-23 |
+| Test | `python3 -m unittest discover -s tests -v` (the WebUI check needs Node.js) | Verified. Evidence: 45 passed, 2026-10-23 |
 | Release (maintainer) | GitHub Actions **Release** on `dev`, `draft_release` (docs/RELEASING.md) | Configured: actionlint clean, 2026-10-23; never run |
 | Shell lint | `shellcheck -s sh -x module/*.sh module/META-INF/com/google/android/update-binary` | Verified. Evidence: clean, 2026-10-23 |
 | Workflow lint | `actionlint .github/workflows/*.yml` | Verified. Evidence: clean, 2026-10-23 |

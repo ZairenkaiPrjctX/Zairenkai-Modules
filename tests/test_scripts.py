@@ -53,6 +53,40 @@ class IntegrityTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertRegex(r.stdout, r"^verified: \d+ files match SHA256SUMS\n$")
 
+    def run_installer(self, until):
+        """customize.sh as a root manager sources it, stopped when it prints `until`. The stubs
+        stand in for the installer's functions; nothing outside the module directory is read
+        for writing before step 3, so the run ends there."""
+        stub = (
+            'ui_print() { echo "$1"; case "$1" in "' + until + '"*) exit 0;; esac; }\n'
+            'abort() { echo "$1"; exit 1; }\n'
+            "set_perm() { :; }\nset_perm_recursive() { :; }\n"
+            f'MODPATH="{self.mod}"; ARCH=arm64; API=37\n'
+            '. "$MODPATH/customize.sh"\n'
+        )
+        return subprocess.run(["sh", "-c", stub], capture_output=True, text=True, timeout=60)
+
+    def test_the_installer_accepts_files_extracted_without_the_exec_bit(self):
+        # KernelSU-Next extracts the zip without file modes; customize.sh sets them in step 4.
+        # A device install failed on "has no bin/zcored" when step 2 tested -x (2026-10-23).
+        for f in (self.mod / "bin").iterdir():
+            f.chmod(0o644)
+        r = self.run_installer("[3/5]")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("files match SHA256SUMS", r.stdout)
+        self.assertNotIn("incomplete", r.stdout)
+
+    def test_the_installer_refuses_a_package_without_zcored(self):
+        (self.mod / "bin/zcored").unlink()
+        r = self.run_installer("[3/5]")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("nothing was installed", r.stdout)
+
+    def test_no_exec_bit_is_tested_before_the_permissions_step(self):
+        customize = (ROOT / "module/customize.sh").read_text()
+        before = customize[:customize.index('ui_print "[4/5] Permissions"')]
+        self.assertNotIn('-x "$MODPATH', before)
+
     def test_a_modified_binary_is_refused(self):
         (self.mod / "bin/zfasd").write_bytes(b"\x7fELF replaced")
         for mode in ("install", "runtime"):

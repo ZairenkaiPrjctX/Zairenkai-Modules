@@ -35,7 +35,9 @@ if ! problems=$(zr_verify "$MODPATH" install); then
   printf '%s\n' "$problems" | head -n 20 | while IFS= read -r p; do ui_print "!     $p"; done
   abort "! The package does not match its SHA256SUMS; nothing was installed"
 fi
-[ -x "$MODPATH/bin/zcored" ] || abort "! The package has no bin/zcored; it is incomplete"
+# Presence, not the exec bit: KernelSU-Next extracts the zip without file modes (seen on a device,
+# 2026-10-23); step 4 sets them.
+[ -f "$MODPATH/bin/zcored" ] || abort "! The package has no bin/zcored; it is incomplete"
 ui_print "      $(grep -c '' "$MODPATH/SHA256SUMS") files match SHA256SUMS"
 
 ui_print "[3/5] Data in $ZR_DATA"
@@ -45,7 +47,7 @@ for c in core fas; do
 done
 # FAS writes cpufreq floors once enabled, so a first install leaves it switched off; the user
 # turns it on from the app or the WebUI, which saves the choice here.
-if [ -x "$MODPATH/bin/zfasd" ] && [ ! -f "$ZR_DATA/fas/config.toml" ]; then
+if [ -f "$MODPATH/bin/zfasd" ] && [ ! -f "$ZR_DATA/fas/config.toml" ]; then
   cp "$MODPATH/defaults/fas-config.toml" "$ZR_DATA/fas/config.toml"
   chmod 0600 "$ZR_DATA/fas/config.toml"
   ui_print "      FAS installed switched off: enable it in the Zairenkai app"

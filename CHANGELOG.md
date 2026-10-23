@@ -4,6 +4,15 @@ Every version of the zairenkai module, newest first. The release workflow publis
 the version it builds as the release notes (and as `changelog.md`, which root managers show).
 The zip carries this file as `docs/CHANGELOG.md`.
 
+## [0.3.1] - unreleased
+
+### Fixed
+- The installer no longer stops with "The package has no bin/zcored; it is incomplete" on
+  KernelSU-Next (reported on a device, arm64, API 37). The manager extracts the zip without file
+  modes, and the installer tested the exec bit before setting it; it now checks that the file is
+  present, then sets the modes. The same test kept FAS's default configuration (switched off)
+  from being copied on a first install.
+
 ## [0.3.0] - unreleased
 
 ### Added
