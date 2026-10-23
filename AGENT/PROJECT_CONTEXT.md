@@ -18,9 +18,9 @@
 | Area | Location | Status |
 |---|---|---|
 | Module scripts, installer stub, KernelSU WebUI | `module/` | Verified: shellcheck clean, 2026-10-22. **Unverified** on a device |
-| Component lock | `components.lock.json` | Verified: Core `8931cbb`, FAS `99cfb18`, Tuning `0c226b2` (topic branch `ccr-63f8aa87-1b0paj` of each), module 0.2.0, 2026-10-22 |
+| Component lock | `components.lock.json` | Verified: Core `345fc7f` and FAS `1c453db` (merge commits on `dev`, trees identical to the tested PR heads), Tuning `0c226b2` (topic branch: Tuning has no default branch yet), module 0.2.0, 2026-10-23 |
 | Assembler | `scripts/assemble.py` | Verified with stand-in components (17 tests, incl. the GPL source requirement), and on real arm64 components built locally with NDK r27d: zip of 26 entries, 2026-10-22 |
-| CI | `.github/workflows/ci.yml` | actionlint clean, 2026-10-22. The `module` job checks the public component repositories out without the CI GitHub App since 2026-10-22. **Unverified** on GitHub |
+| CI | `.github/workflows/ci.yml` | Verified on GitHub. Evidence: run 39827725469 (`298311c`), `module` job and checks green, 2026-10-22; the public components are checked out without a token |
 | Docs | `README.md`, `docs/` | Verified: files present |
 
 ## Key facts
