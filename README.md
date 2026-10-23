@@ -56,6 +56,14 @@ installer; zart and zthermal are app libraries and are not part of the module.
 
 Security model and its limits: [docs/SECURITY.md](docs/SECURITY.md).
 
+## Releases and updates
+
+`module.prop` carries `updateJson`, so Magisk, KernelSU and APatch offer each **published** GitHub
+release of this repository as an update; the Zairenkai app also announces it. The **Release**
+workflow builds the module at the locked commits and creates a draft release (zip, `.sha256`,
+`update.json`, `changelog.md`) that a maintainer publishes: [docs/RELEASING.md](docs/RELEASING.md).
+What changed: [CHANGELOG.md](CHANGELOG.md).
+
 ## Status
 
 Nothing has run on a device. See [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md). Build and

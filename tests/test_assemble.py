@@ -144,6 +144,42 @@ class AssembleTest(unittest.TestCase):
         self.assertRegex(text, r'\n    "zairenkai-core": \{"version": "0\.1\.0", ')
         self.assertRegex(text, r'\n    "zairenkai-fas": \{"version": "0\.1\.0", ')
 
+    def test_release_metadata_for_root_managers(self):
+        path, _ = self.build()
+        with zipfile.ZipFile(path) as z:
+            prop = z.read("module.prop").decode()
+            names = set(z.namelist())
+        url = "https://github.com/ZairenkaiPrjctX/Zairenkai-Modules/releases/latest/download/update.json"
+        self.assertIn(f"updateJson={url}\n", prop)
+        self.assertIn("docs/README.md", names)
+        self.assertIn("docs/CHANGELOG.md", names)
+        self.assertNotIn("README.md", names)  # Magisk deletes a top-level README.md after install
+        update = json.loads((path.parent / "update.json").read_text())
+        self.assertEqual(update, {
+            "version": "v0.1.0",
+            "versionCode": 100,
+            "zipUrl": "https://github.com/ZairenkaiPrjctX/Zairenkai-Modules/releases/download/v0.1.0/zairenkai-v0.1.0.zip",
+            "changelog": "https://github.com/ZairenkaiPrjctX/Zairenkai-Modules/releases/download/v0.1.0/changelog.md",
+        })
+        self.assertIn("First module", (path.parent / "changelog.md").read_text())
+
+    def test_a_version_without_a_changelog_entry_is_refused(self):
+        data = json.loads(self.lock.read_text())
+        data["module"]["version"] = "9.9.9"
+        self.lock.write_text(json.dumps(data))
+        with self.assertRaisesRegex(assemble.AssemblyError, "no entry for 9.9.9"):
+            self.build()
+
+    def test_changelog_entries_match_exactly(self):
+        log = "## [0.3.0] - x\n- three\n\n## [0.3.0-beta.1]\n- beta\n## [0.30.0]\n- thirty\n"
+        self.assertEqual(assemble.changelog_entry(log, "0.3.0"), "- three\n")
+        with self.assertRaises(assemble.AssemblyError):
+            assemble.changelog_entry(log, "0.3")
+
+    def test_the_repository_changelog_covers_the_locked_version(self):
+        real = assemble.load_lock(assemble.ROOT / "components.lock.json")
+        self.assertTrue(assemble.changelog_entry((assemble.ROOT / "CHANGELOG.md").read_text(), real["module"]["version"]))
+
     def test_reproducible(self):
         a, _ = self.build("a")
         b, _ = self.build("b")

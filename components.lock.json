@@ -3,6 +3,7 @@
   "module": {
     "id": "zairenkai",
     "name": "Zairenkai",
+    "repository": "ZairenkaiPrjctX/Zairenkai-Modules",
     "version": "0.3.0"
   },
   "components": [
