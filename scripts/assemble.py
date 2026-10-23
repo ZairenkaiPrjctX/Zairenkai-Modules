@@ -21,9 +21,15 @@ under source/ and a SOURCE.md saying how to rebuild. Both go into the module (so
 licenses/<name>/SOURCE.md) next to the binary; without them assembly fails. The zip is an
 aggregate of separate programs; each keeps its own licence.
 
+Releases: module.prop carries `updateJson`, the URL of update.json in the repository's latest
+GitHub release, so Magisk, KernelSU and APatch offer a published release as an update. Next to
+the zip the assembler writes update.json (version, versionCode, the release's zip and changelog
+URLs) and changelog.md (this version's CHANGELOG.md entry; a version without an entry fails).
+The zip also carries docs/README.md and docs/CHANGELOG.md.
+
 Usage: assemble.py [--lock components.lock.json] --component DIR [--component DIR ...]
                    [--out dist]
-Output: <out>/zairenkai-v<version>.zip and <out>/zairenkai-v<version>.zip.sha256
+Output: <out>/zairenkai-v<version>.zip, .zip.sha256, update.json and changelog.md
 """
 import argparse
 import hashlib
@@ -38,6 +44,7 @@ TARGET = "aarch64-linux-android"
 LICENCE_FILES = ("LICENSE", "NOTICE", "THIRD_PARTY.md")
 SOURCE_INFO = "SOURCE.md"
 ZIP_DATE = (2000, 1, 1, 0, 0, 0)
+DEFAULT_REPOSITORY = "ZairenkaiPrjctX/Zairenkai-Modules"
 SUMS = "SHA256SUMS"
 MAX_COMPONENT_FILE = 64 * 1024 * 1024
 
@@ -139,6 +146,48 @@ def version_code(version):
     return major * 10000 + minor * 100 + patch
 
 
+def repository(lock):
+    repo = lock["module"].get("repository", DEFAULT_REPOSITORY)
+    if not re.fullmatch(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+", repo):
+        raise AssemblyError(f"module repository {repo!r} is not owner/name")
+    return repo
+
+
+def update_json_url(lock):
+    """Stable URL root managers poll: update.json of the latest published (non-pre-) release."""
+    return f"https://github.com/{repository(lock)}/releases/latest/download/update.json"
+
+
+def changelog_entry(text, version):
+    """The body of `## [version] ...` in CHANGELOG.md, without its heading."""
+    out, inside = [], False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            if inside:
+                break
+            inside = re.match(r"^## \[?v?" + re.escape(version) + r"\]?(\s|$)", line) is not None
+            continue
+        if inside:
+            out.append(line)
+    body = "\n".join(out).strip()
+    if not body:
+        raise AssemblyError(f"CHANGELOG.md has no entry for {version}")
+    return body + "\n"
+
+
+def update_json(lock):
+    """Magisk's (and KernelSU's, APatch's) update.json for this version's GitHub release."""
+    m = lock["module"]
+    base = f"https://github.com/{repository(lock)}/releases/download/v{m['version']}"
+    doc = {
+        "version": f"v{m['version']}",
+        "versionCode": version_code(m["version"]),
+        "zipUrl": f"{base}/{m['id']}-v{m['version']}.zip",
+        "changelog": f"{base}/changelog.md",
+    }
+    return json.dumps(doc, indent=2) + "\n"
+
+
 def module_prop(lock, manifests):
     module = lock["module"]
     parts = ", ".join(
@@ -150,6 +199,7 @@ def module_prop(lock, manifests):
         template.replace("@VERSION@", module["version"])
         .replace("@VERSION_CODE@", str(version_code(module["version"])))
         .replace("@DESCRIPTION@", description)
+        .replace("@UPDATE_JSON@", update_json_url(lock))
     )
     if "@" in out or f"id={module['id']}\n" not in out:
         raise AssemblyError("module.prop.in and components.lock.json disagree")
@@ -190,11 +240,13 @@ def entries(lock, components, manifests):
     out = []
     for p in sorted((ROOT / "module").rglob("*")):
         rel = p.relative_to(ROOT / "module").as_posix()
-        if p.is_file() and rel != "module.prop.in":
+        if p.is_file() and rel not in ("module.prop.in", "README.md"):
             executable = rel.endswith(".sh") or rel.endswith("update-binary")
             out.append((rel, p.read_bytes(), executable))
     out.append(("module.prop", module_prop(lock, manifests).encode(), False))
     out.append(("components.json", components_json(lock, manifests).encode(), False))
+    out.append(("docs/README.md", (ROOT / "module" / "README.md").read_bytes(), False))
+    out.append(("docs/CHANGELOG.md", (ROOT / "CHANGELOG.md").read_bytes(), False))
     out.append(("LICENSE", (ROOT / "LICENSE").read_bytes(), False))
     out.append(("NOTICE", (ROOT / "NOTICE").read_bytes(), False))
     for c in lock["components"]:
@@ -254,12 +306,15 @@ def assemble(lock_path, component_dirs, out_dir):
     if missing := set(pinned) - set(by_name):
         raise AssemblyError(f"missing components: {sorted(missing)}")
     manifests = {n: check_component(by_name[n], pinned[n]) for n in pinned}
+    notes = changelog_entry((ROOT / "CHANGELOG.md").read_text(), lock["module"]["version"])
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     zip_path = out / f"{lock['module']['id']}-v{lock['module']['version']}.zip"
     write_zip(zip_path, entries(lock, by_name, manifests))
     digest = sha256(zip_path)
     (out / (zip_path.name + ".sha256")).write_text(f"{digest}  {zip_path.name}\n")
+    (out / "update.json").write_text(update_json(lock))
+    (out / "changelog.md").write_text(notes)
     return zip_path, digest
 
 

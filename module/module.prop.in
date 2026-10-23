@@ -4,3 +4,4 @@ version=v@VERSION@
 versionCode=@VERSION_CODE@
 author=ZairenkaiPrjctX
 description=@DESCRIPTION@
+updateJson=@UPDATE_JSON@

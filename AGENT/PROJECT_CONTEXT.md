@@ -42,6 +42,14 @@
   2026-10-23. **Unverified** on a device, including whether KernelSU's WebView delivers
   `ksu.exec` results under the page's policy.
 
+- Releases (0.3.0): `module.prop` has `updateJson` (latest GitHub release's `update.json`); the
+  assembler writes `update.json` and `changelog.md` next to the zip and puts `docs/README.md` and
+  `docs/CHANGELOG.md` in it; `.github/workflows/release.yml` builds at the locked commits and
+  creates a draft release. Verified on the host. Evidence: 42 tests; a zip from real arm64
+  components (Core `345fc7f`, FAS `1c453db`, Tuning `0c226b2`) with 34 entries, `SHA256SUMS`,
+  `update.json` and `module.prop` in agreement, 2026-10-23. **Unverified**: the workflow has never
+  run and no release exists.
+
 ## Authoritative sources
 
 | Topic | Source |
