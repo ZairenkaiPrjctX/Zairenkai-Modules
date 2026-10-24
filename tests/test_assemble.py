@@ -91,7 +91,9 @@ class AssembleTest(unittest.TestCase):
             comps = json.loads(z.read("components.json"))
             mode = {i.filename: (i.external_attr >> 16) & 0o777 for i in z.infolist()}
         for f in ["module.prop", "customize.sh", "service.sh", "action.sh", "uninstall.sh",
+                  "common.sh", "verify.sh", "SHA256SUMS",
                   "META-INF/com/google/android/update-binary", "webroot/index.html",
+                  "webroot/app.js", "webroot/style.css", "webroot/logo.svg",
                   "bin/zcored", "bin/zfasd", "LICENSE", "NOTICE", "components.json",
                   "licenses/zairenkai-core/LICENSE", "licenses/zairenkai-fas/NOTICE"]:
             self.assertIn(f, names)
@@ -102,7 +104,26 @@ class AssembleTest(unittest.TestCase):
         self.assertEqual(comps["components"]["zairenkai-fas"]["commit"], FAS)
         self.assertEqual(mode["bin/zfasd"], 0o755)
         self.assertEqual(mode["service.sh"], 0o755)
+        self.assertEqual(mode["verify.sh"], 0o755)
         self.assertEqual(mode["LICENSE"], 0o644)
+        self.assertEqual(mode["SHA256SUMS"], 0o644)
+
+    def test_sha256sums_lists_every_extracted_file(self):
+        path, _ = self.build()
+        with zipfile.ZipFile(path) as z:
+            sums = z.read("SHA256SUMS").decode()
+            files = {n: z.read(n) for n in z.namelist()}
+        listed = {}
+        for line in sums.splitlines():
+            digest, name = line.split("  ", 1)
+            listed[name] = digest
+        expected = {n for n in files if not n.startswith("META-INF/") and n != "SHA256SUMS"}
+        self.assertEqual(set(listed), expected)
+        for name, digest in listed.items():
+            self.assertEqual(hashlib.sha256(files[name]).hexdigest(), digest, name)
+        self.assertEqual(sums.splitlines(), sorted(sums.splitlines(), key=lambda l: l.split("  ", 1)[1]))
+        # The installer and the boot check rely on fixed-width lines (64 hex + two spaces).
+        self.assertTrue(all(len(l.split("  ", 1)[0]) == 64 for l in sums.splitlines()))
 
     def test_fas_starts_switched_off_on_first_install(self):
         path, _ = self.build()
@@ -112,8 +133,8 @@ class AssembleTest(unittest.TestCase):
         self.assertIn("[general]\nenabled = false\n", cfg)
         self.assertIn("schema_version = 1\n", cfg)
         # Copied only when no configuration exists, so the user's choice survives updates.
-        self.assertIn('[ ! -f "$DATA/fas/config.toml" ]', script)
-        self.assertIn('cp "$MODPATH/defaults/fas-config.toml" "$DATA/fas/config.toml"', script)
+        self.assertIn('[ ! -f "$ZR_DATA/fas/config.toml" ]', script)
+        self.assertIn('cp "$MODPATH/defaults/fas-config.toml" "$ZR_DATA/fas/config.toml"', script)
 
     def test_customize_sh_can_read_components_json(self):
         path, _ = self.build()
@@ -122,6 +143,42 @@ class AssembleTest(unittest.TestCase):
         # customize.sh prints one line per component with a sed over this layout.
         self.assertRegex(text, r'\n    "zairenkai-core": \{"version": "0\.1\.0", ')
         self.assertRegex(text, r'\n    "zairenkai-fas": \{"version": "0\.1\.0", ')
+
+    def test_release_metadata_for_root_managers(self):
+        path, _ = self.build()
+        with zipfile.ZipFile(path) as z:
+            prop = z.read("module.prop").decode()
+            names = set(z.namelist())
+        url = "https://github.com/ZairenkaiPrjctX/Zairenkai-Modules/releases/latest/download/update.json"
+        self.assertIn(f"updateJson={url}\n", prop)
+        self.assertIn("docs/README.md", names)
+        self.assertIn("docs/CHANGELOG.md", names)
+        self.assertNotIn("README.md", names)  # Magisk deletes a top-level README.md after install
+        update = json.loads((path.parent / "update.json").read_text())
+        self.assertEqual(update, {
+            "version": "v0.1.0",
+            "versionCode": 100,
+            "zipUrl": "https://github.com/ZairenkaiPrjctX/Zairenkai-Modules/releases/download/v0.1.0/zairenkai-v0.1.0.zip",
+            "changelog": "https://github.com/ZairenkaiPrjctX/Zairenkai-Modules/releases/download/v0.1.0/changelog.md",
+        })
+        self.assertIn("First module", (path.parent / "changelog.md").read_text())
+
+    def test_a_version_without_a_changelog_entry_is_refused(self):
+        data = json.loads(self.lock.read_text())
+        data["module"]["version"] = "9.9.9"
+        self.lock.write_text(json.dumps(data))
+        with self.assertRaisesRegex(assemble.AssemblyError, "no entry for 9.9.9"):
+            self.build()
+
+    def test_changelog_entries_match_exactly(self):
+        log = "## [0.3.0] - x\n- three\n\n## [0.3.0-beta.1]\n- beta\n## [0.30.0]\n- thirty\n"
+        self.assertEqual(assemble.changelog_entry(log, "0.3.0"), "- three\n")
+        with self.assertRaises(assemble.AssemblyError):
+            assemble.changelog_entry(log, "0.3")
+
+    def test_the_repository_changelog_covers_the_locked_version(self):
+        real = assemble.load_lock(assemble.ROOT / "components.lock.json")
+        self.assertTrue(assemble.changelog_entry((assemble.ROOT / "CHANGELOG.md").read_text(), real["module"]["version"]))
 
     def test_reproducible(self):
         a, _ = self.build("a")

@@ -20,14 +20,15 @@ env:
 
 jobs:
   checks:
-    name: shellcheck and assembler tests
+    name: shellcheck, assembler, script and WebUI tests
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: shellcheck -s sh module/*.sh module/META-INF/com/google/android/update-binary
+      - run: shellcheck -s sh -x module/*.sh module/META-INF/com/google/android/update-binary
+      - run: node --version
       - run: python3 -m unittest discover -s tests -v
 
   # The single zairenkai module: Core, FAS and Tuning are built at the commits
@@ -92,6 +93,12 @@ jobs:
             --component components/tuning/dist/zairenkai-tuning \
             --out dist
           unzip -l dist/zairenkai-v*.zip
+      - name: Check the module's SHA256SUMS like the installer does
+        run: |
+          mkdir extracted
+          unzip -q dist/zairenkai-v*.zip -x 'META-INF/*' -d extracted
+          (cd extracted && sha256sum -c --quiet SHA256SUMS)
+          sh -c '. extracted/common.sh && zr_verify extracted install'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: zairenkai-module-unsigned-not-for-distribution

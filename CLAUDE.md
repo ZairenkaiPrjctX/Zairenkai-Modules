@@ -23,6 +23,12 @@ Non-negotiables in this repo:
 - A component enters the zip only through `assemble.py`, at the commit the lock pins, with
   every file matching its `component.json`. Never commit binaries.
 - Uninstall restores what FAS and ztune changed before deleting their data.
+- Releases are drafts created by the Release workflow; only a maintainer publishes. Every version
+  needs a `CHANGELOG.md` entry; `updateJson` always points at the latest published release.
+- Every file of the zip is in `SHA256SUMS` (written by `assemble.py`); install and boot refuse a
+  mismatch. The WebUI keeps its Content-Security-Policy, runs only constant or allowlisted
+  commands, never builds HTML from daemon output, and sends changes through Core
+  (`docs/SECURITY.md`).
 - ztune (Zairenkai-Tuning) is GPL-3.0: it ships with its licence and Corresponding Source
   (`assemble.py` enforces it), stays a separate program, and is never run at install or boot.
   Module scripts never link, copy or patch it.
@@ -32,9 +38,10 @@ Non-negotiables in this repo:
 | Purpose | Command | Status |
 |---|---|---|
 | Assemble | `python3 scripts/assemble.py --component <core dist> --component <fas dist> --component <tuning dist>` | Verified. Evidence: real arm64 components built locally with NDK r27d at the locked commits (Core 345fc7f, FAS 1c453db, Tuning 0c226b2): `zairenkai-v0.2.0.zip`, 26 entries, identical to the previous build except `components.json`, 2026-10-23; CI `module` job green (run 39827725469, 2026-10-22) |
-| Test | `python3 -m unittest discover -s tests -v` | Verified. Evidence: 17 passed, 2026-10-22 |
-| Shell lint | `shellcheck -s sh module/*.sh module/META-INF/com/google/android/update-binary` | Verified. Evidence: clean, 2026-10-22 |
-| Workflow lint | `actionlint .github/workflows/ci.yml` | Verified. Evidence: clean, 2026-10-22 |
+| Test | `python3 -m unittest discover -s tests -v` (the WebUI check needs Node.js) | Verified. Evidence: 45 passed, 2026-10-23 |
+| Release (maintainer) | GitHub Actions **Release** on `dev`, `draft_release` (docs/RELEASING.md) | Configured: actionlint clean, 2026-10-23; never run |
+| Shell lint | `shellcheck -s sh -x module/*.sh module/META-INF/com/google/android/update-binary` | Verified. Evidence: clean, 2026-10-23 |
+| Workflow lint | `actionlint .github/workflows/*.yml` | Verified. Evidence: clean, 2026-10-23 |
 | Validate agent foundation | `python3 <path-to-.github>/agent-foundation/scripts/validate_agent_setup.py .` | Configured |
 
 Only list commands that exist in this repository. Never invent one.

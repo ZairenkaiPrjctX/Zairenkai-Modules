@@ -1,0 +1,44 @@
+{
+  "id": "cli-22316-3007763",
+  "ok": true,
+  "result": {
+    "decision": {
+      "policy_version": "builtin-1/cfg-811a9b9369260358",
+      "rules": [
+        {
+          "explanation": "request is well-formed",
+          "rule": "builtin.request_valid",
+          "tier": "integrity",
+          "verdict": "allow"
+        },
+        {
+          "explanation": "root holds a grant for FasSetProfile",
+          "rule": "builtin.authorized",
+          "tier": "integrity",
+          "verdict": "allow"
+        },
+        {
+          "explanation": "fas.profile is Unsupported on this device",
+          "rule": "builtin.capability",
+          "tier": "safety",
+          "verdict": "deny"
+        },
+        {
+          "explanation": "thermal status unknown or stale; raising actions denied",
+          "rule": "builtin.thermal",
+          "tier": "safety",
+          "verdict": "deny"
+        }
+      ],
+      "tier": "user",
+      "verdict": "deny"
+    },
+    "lease_id": null,
+    "message": "builtin.capability: fas.profile is Unsupported on this device; builtin.thermal: thermal status unknown or stale; raising actions denied",
+    "outcome": "rejected",
+    "plan": null,
+    "request_id": "cli-22316-3007763",
+    "verification": null
+  },
+  "v": 1
+}

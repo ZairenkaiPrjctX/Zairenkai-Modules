@@ -6,10 +6,14 @@
 | Android | API 29 (Android 10) or newer | Enforced by `customize.sh`; the binaries link against API 29. |
 | Page size | 4 KB and 16 KB | Each component's build checks for 16 KB-aligned LOAD segments. |
 | Magisk | v20.4 or newer (`update-binary` uses `install_module`) | **Unverified** on a device. |
-| KernelSU / KernelSU-Next | Module format and WebUI | **Unverified** on a device. |
+| KernelSU / KernelSU-Next | Module format and WebUI | Partly verified: a user install of 0.3.0 on KernelSU-Next ("Hybrid Mount metainstall", arm64, API 37) passed the device check and `SHA256SUMS`, then stopped because the installer tested the exec bit before setting it (fixed in 0.3.1, `tests/test_scripts.py`). The rest of the install, boot and the WebUI are **Unverified**. |
 | APatch | Module format | **Unverified** on a device. |
-| Devices | Any; features depend on the kernel interfaces each daemon probes | **Unverified**: no device has run this module. |
+| Devices | Any; features depend on the kernel interfaces each daemon probes | **Unverified**: no device has run the daemons from this module. |
 
-Verified so far, without a device: the scripts pass shellcheck, and the assembler is tested with
-stand-in components (`tests/test_assemble.py`). A module built from the real components exists
+Verified so far, without a device: the scripts pass shellcheck; the assembler is tested with
+stand-in components (`tests/test_assemble.py`); the integrity check, status line, process check
+and data-directory guard run under the host's POSIX `sh` (`tests/test_scripts.py`); the WebUI's
+command builders and parsers run under Node on captured daemon output (`tests/test_webui.py`).
+Whether KernelSU's WebView delivers `ksu.exec` results under the page's Content-Security-Policy
+is **Unverified** ([SECURITY.md](SECURITY.md#webui)). A module built from the real components exists
 only once the CI `module` job has run.

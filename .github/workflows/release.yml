@@ -1,0 +1,167 @@
+name: Release
+
+# Manual only, from dev. Builds Core, FAS and Tuning at the commits components.lock.json pins
+# (exactly as CI's module job), assembles the zairenkai module, checks every file against its
+# SHA256SUMS as the installer does, and uploads the zip, its .sha256, update.json and
+# changelog.md as a workflow artifact.
+#
+# With draft_release, a second job (the only one with write access) creates a DRAFT GitHub
+# release v<version> with those four files. Root managers poll
+# releases/latest/download/update.json (module.prop's updateJson), and the Zairenkai app reads
+# the release list: both see the version only after the maintainer publishes the draft.
+on:
+  workflow_dispatch:
+    inputs:
+      draft_release:
+        description: Create a draft GitHub release (the maintainer publishes it)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  RUST_STABLE: "1.97.0"
+  NDK_VERSION: r27d
+  NDK_SHA256: 601246087a682d1944e1e16dd85bc6e49560fe8b6d61255be2829178c8ed15d9
+
+jobs:
+  build:
+    name: build the zairenkai module at the locked commits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Require the dev branch
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$REF" != refs/heads/dev ]; then
+            echo "::error::Releases are built from dev only (ran on $REF)."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Tests and shell lint
+        run: |
+          shellcheck -s sh -x module/*.sh module/META-INF/com/google/android/update-binary
+          python3 -m unittest discover -s tests -v
+      - name: Locked commits
+        id: lock
+        run: |
+          python3 - >>"$GITHUB_OUTPUT" <<'PY'
+          import json, re
+          lock = json.load(open("components.lock.json"))
+          assert re.fullmatch(r"\d+\.\d+\.\d+", lock["module"]["version"])
+          print(f'version={lock["module"]["version"]}')
+          for c in lock["components"]:
+              assert re.fullmatch(r"[0-9a-f]{40}", c["commit"]), c["name"]
+              print(f'{c["name"].removeprefix("zairenkai-")}={c["commit"]}')
+          PY
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ZairenkaiPrjctX/Zairenkai-Core
+          ref: ${{ steps.lock.outputs.core }}
+          path: components/core
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ZairenkaiPrjctX/Zairenkai-FAS
+          ref: ${{ steps.lock.outputs.fas }}
+          path: components/fas
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ZairenkaiPrjctX/Zairenkai-Tuning
+          ref: ${{ steps.lock.outputs.tuning }}
+          path: components/tuning
+          persist-credentials: false
+      - name: Rust and Android NDK (checksum verified)
+        run: |
+          rustup toolchain install "$RUST_STABLE" --profile minimal -t aarch64-linux-android
+          rustup default "$RUST_STABLE"
+          curl -fsSL -o /tmp/ndk.zip "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
+          echo "${NDK_SHA256}  /tmp/ndk.zip" | sha256sum -c -
+          unzip -q /tmp/ndk.zip -d /tmp
+          rm /tmp/ndk.zip
+          echo "ANDROID_NDK_HOME=/tmp/android-ndk-${NDK_VERSION}" >> "$GITHUB_ENV"
+      - name: Build the components
+        run: |
+          components/core/scripts/build-android.sh
+          components/fas/scripts/build-android.sh
+          components/tuning/scripts/build-android.sh
+      - name: Assemble
+        run: |
+          python3 scripts/assemble.py \
+            --component components/core/dist/zairenkai-core \
+            --component components/fas/dist/zairenkai-fas \
+            --component components/tuning/dist/zairenkai-tuning \
+            --out dist
+      - name: Check the package like the installer does
+        env:
+          VERSION: ${{ steps.lock.outputs.version }}
+        run: |
+          zip="dist/zairenkai-v$VERSION.zip"
+          (cd dist && sha256sum -c "zairenkai-v$VERSION.zip.sha256")
+          mkdir extracted
+          unzip -q "$zip" -x 'META-INF/*' -d extracted
+          (cd extracted && sha256sum -c --quiet SHA256SUMS)
+          sh -c '. extracted/common.sh && zr_verify extracted install'
+          python3 - "$VERSION" <<'PY'
+          import json, sys
+          v = sys.argv[1]
+          u = json.load(open("dist/update.json"))
+          prop = dict(l.split("=", 1) for l in open("extracted/module.prop").read().splitlines() if "=" in l)
+          assert u["version"] == prop["version"] == f"v{v}", (u, prop)
+          assert u["versionCode"] == int(prop["versionCode"])
+          assert u["zipUrl"].endswith(f"/releases/download/v{v}/zairenkai-v{v}.zip")
+          assert prop["updateJson"].endswith("/releases/latest/download/update.json")
+          print("update.json and module.prop agree:", u["version"], u["versionCode"])
+          PY
+          { echo "### zairenkai module v$VERSION"; echo '```'; cat dist/*.sha256; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: zairenkai-module-release
+          path: |
+            dist/zairenkai-v*.zip
+            dist/zairenkai-v*.zip.sha256
+            dist/update.json
+            dist/changelog.md
+          if-no-files-found: error
+
+  # Separate from the build so the write token never sits next to the build tools and their
+  # dependencies. Creates a draft only; publishing it is the maintainer's step.
+  draft:
+    name: draft GitHub release
+    needs: [build]
+    if: ${{ inputs.draft_release }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: zairenkai-module-release
+          path: dist
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("dist/update.json"))["version"])')
+          case "$version" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "::error::bad version $version"; exit 1 ;; esac
+          if gh release view "$version" >/dev/null 2>&1; then
+            echo "::error::A release $version already exists. Raise the module version in components.lock.json."
+            exit 1
+          fi
+          (cd dist && sha256sum -c "zairenkai-$version.zip.sha256")
+          gh release create "$version" --draft --target "$SHA" \
+            --title "Zairenkai module $version" --notes-file dist/changelog.md \
+            "dist/zairenkai-$version.zip" "dist/zairenkai-$version.zip.sha256" dist/update.json dist/changelog.md
+          echo "Draft release $version created. Publish it on GitHub to offer it to root managers and the app." >> "$GITHUB_STEP_SUMMARY"
