@@ -149,7 +149,7 @@ class AssembleTest(unittest.TestCase):
         with zipfile.ZipFile(path) as z:
             prop = z.read("module.prop").decode()
             names = set(z.namelist())
-        url = "https://github.com/ZairenkaiPrjctX/Zairenkai-Modules/releases/latest/download/update.json"
+        url = "https://github.com/ZairenkaiPrjctX/Zairenkai-Release/releases/latest/download/update.json"
         self.assertIn(f"updateJson={url}\n", prop)
         self.assertIn("docs/README.md", names)
         self.assertIn("docs/CHANGELOG.md", names)
@@ -158,8 +158,8 @@ class AssembleTest(unittest.TestCase):
         self.assertEqual(update, {
             "version": "v0.1.0",
             "versionCode": 100,
-            "zipUrl": "https://github.com/ZairenkaiPrjctX/Zairenkai-Modules/releases/download/v0.1.0/zairenkai-v0.1.0.zip",
-            "changelog": "https://github.com/ZairenkaiPrjctX/Zairenkai-Modules/releases/download/v0.1.0/changelog.md",
+            "zipUrl": "https://github.com/ZairenkaiPrjctX/Zairenkai-Release/releases/download/module-v0.1.0/zairenkai-v0.1.0.zip",
+            "changelog": "https://github.com/ZairenkaiPrjctX/Zairenkai-Release/releases/download/module-v0.1.0/changelog.md",
         })
         self.assertIn("First module", (path.parent / "changelog.md").read_text())
 

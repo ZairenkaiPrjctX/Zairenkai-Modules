@@ -4,6 +4,7 @@
     "id": "zairenkai",
     "name": "Zairenkai",
     "repository": "ZairenkaiPrjctX/Zairenkai-Modules",
+    "release_repository": "ZairenkaiPrjctX/Zairenkai-Release",
     "version": "0.3.2"
   },
   "components": [
