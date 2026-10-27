@@ -10,6 +10,14 @@ name: Release
 # releases/latest/download/update.json (module.prop's updateJson), and the Zairenkai app reads
 # the release list: both see the version only after the maintainer publishes the draft.
 on:
+  # A newly merged component lock creates a draft release automatically. It is never published
+  # without a maintainer reviewing the immutable artifact manifest and pressing Publish.
+  push:
+    branches: [dev]
+    paths:
+      - 'components.lock.json'
+      - 'scripts/assemble.py'
+      - 'module/**'
   workflow_dispatch:
     inputs:
       draft_release:
@@ -105,11 +113,28 @@ jobs:
           unzip -q /tmp/ndk.zip -d /tmp
           rm /tmp/ndk.zip
           echo "ANDROID_NDK_HOME=/tmp/android-ndk-${NDK_VERSION}" >> "$GITHUB_ENV"
-      - name: Build the components
+      - name: Build or consume verified component artifacts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          components/core/scripts/build-android.sh
-          components/fas/scripts/build-android.sh
-          components/tuning/scripts/build-android.sh
+          set -euo pipefail
+          mkdir -p dist/artifacts
+          for spec in core:zairenkai-core fas:zairenkai-fas tuning:zairenkai-tuning; do
+            dir=${spec%%:*}
+            component=${spec#*:}
+            output="components/$dir/dist/$component"
+            if python3 scripts/fetch_component_artifact.py --lock components.lock.json --component "$component" --out "$output"; then
+              echo "$component: verified immutable release artifact" >> "$GITHUB_STEP_SUMMARY"
+            else
+              result=$?
+              if [ "$result" -ne 3 ]; then
+                echo "Artifact verification failed for $component; refusing an unverified fallback." >&2
+                exit "$result"
+              fi
+              echo "$component: no artifact is pinned; building from the exact checked-out source commit." >> "$GITHUB_STEP_SUMMARY"
+              (cd "components/$dir" && rm -rf "dist/$component" && scripts/build-android.sh)
+            fi
+          done
       - name: Assemble
         run: |
           python3 scripts/assemble.py \
@@ -139,6 +164,44 @@ jobs:
           print("update.json and module.prop agree:", u["version"], u["versionCode"])
           PY
           { echo "### zairenkai module v$VERSION"; echo '```'; cat dist/*.sha256; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Write the immutable artifact manifest
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 - dist <<'PY'
+          import hashlib, json, pathlib, sys
+          out = pathlib.Path(sys.argv[1])
+          lock = json.load(open('components.lock.json', encoding='utf-8'))
+          update = json.load(open(out / 'update.json', encoding='utf-8'))
+          version = lock['module']['version']
+          asset_name = f'zairenkai-v{version}.zip'
+          asset = out / asset_name
+          if not asset.is_file():
+              raise SystemExit(f'module asset missing: {asset}')
+          sha = hashlib.sha256(asset.read_bytes()).hexdigest()
+          recorded = (out / f'{asset_name}.sha256').read_text().split()[0]
+          if sha != recorded:
+              raise SystemExit('module asset hash differs from the assembler SHA256SUMS output')
+          if update.get('version') != f'v{version}':
+              raise SystemExit('update.json version differs from components.lock.json')
+          components = []
+          for c in lock['components']:
+              components.append({k: c[k] for k in ('name', 'repository', 'commit')})
+          manifest = {
+              'schema_version': 1,
+              'repository': __import__('os').environ['SOURCE_REPOSITORY'],
+              'release_tag': f'v{version}',
+              'module_version': version,
+              'module_version_code': update['versionCode'],
+              'source_commit': __import__('os').environ['SOURCE_COMMIT'],
+              'built_from': 'components.lock.json at the source commit',
+              'components': components,
+              'assets': [{'name': asset_name, 'size_bytes': asset.stat().st_size, 'sha256': sha}],
+          }
+          (out / 'artifact-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(manifest, indent=2))
+          PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: zairenkai-module-release
@@ -147,6 +210,7 @@ jobs:
             dist/zairenkai-v*.zip.sha256
             dist/update.json
             dist/changelog.md
+            dist/artifact-manifest.json
           if-no-files-found: error
 
   # Separate from the build so the write token never sits next to the build tools and their
@@ -154,7 +218,7 @@ jobs:
   draft:
     name: draft GitHub release
     needs: [build]
-    if: ${{ inputs.draft_release }}
+    if: ${{ github.event_name == 'push' || inputs.draft_release }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -179,5 +243,5 @@ jobs:
           (cd dist && sha256sum -c "zairenkai-$version.zip.sha256")
           gh release create "$version" --draft --target "$SHA" \
             --title "Zairenkai module $version" --notes-file dist/changelog.md \
-            "dist/zairenkai-$version.zip" "dist/zairenkai-$version.zip.sha256" dist/update.json dist/changelog.md
+            "dist/zairenkai-$version.zip" "dist/zairenkai-$version.zip.sha256" dist/update.json dist/changelog.md dist/artifact-manifest.json
           echo "Draft release $version created. Publish it on GitHub to offer it to root managers and the app." >> "$GITHUB_STEP_SUMMARY"

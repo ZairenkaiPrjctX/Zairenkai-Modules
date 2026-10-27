@@ -96,11 +96,28 @@ jobs:
           unzip -q /tmp/ndk.zip -d /tmp
           rm /tmp/ndk.zip
           echo "ANDROID_NDK_HOME=/tmp/android-ndk-${NDK_VERSION}" >> "$GITHUB_ENV"
-      - name: Build the components
+      - name: Build or consume verified component artifacts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          components/core/scripts/build-android.sh
-          components/fas/scripts/build-android.sh
-          components/tuning/scripts/build-android.sh
+          set -euo pipefail
+          mkdir -p dist/artifacts
+          for spec in core:zairenkai-core fas:zairenkai-fas tuning:zairenkai-tuning; do
+            dir=${spec%%:*}
+            component=${spec#*:}
+            output="components/$dir/dist/$component"
+            if python3 scripts/fetch_component_artifact.py --lock components.lock.json --component "$component" --out "$output"; then
+              echo "$component: verified immutable release artifact" >> "$GITHUB_STEP_SUMMARY"
+            else
+              result=$?
+              if [ "$result" -ne 3 ]; then
+                echo "Artifact verification failed for $component; refusing an unverified fallback." >&2
+                exit "$result"
+              fi
+              echo "$component: no artifact is pinned; building from the exact checked-out source commit." >> "$GITHUB_STEP_SUMMARY"
+              (cd "components/$dir" && rm -rf "dist/$component" && scripts/build-android.sh)
+            fi
+          done
       - name: Assemble and check the module
         run: |
           python3 scripts/assemble.py \

@@ -36,4 +36,4 @@ release publishing restricted to maintainers, and branch protection on `dev`. In
 `SHA256SUMS` protects integrity on the device (`docs/SECURITY.md`); the app's installer
 additionally requires its catalog signed by a trusted key.
 
-**Unverified:** the workflow has not run on GitHub yet, and no release exists.
+**Current state (2026-10-27):** v0.3.1 is published and its Release workflow passed. The v0.3.2 changes in this patch are not released until merged into `dev`, built by the Release workflow, reviewed, and published. Device validation remains separate and is not implied by a green build.

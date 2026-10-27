@@ -18,9 +18,9 @@
 | Area | Location | Status |
 |---|---|---|
 | Module scripts, installer stub, KernelSU/APatch WebUI | `module/` | Verified on the host: shellcheck clean; `common.sh` (integrity check, status line, own-process lookup, data-directory guard) run under POSIX sh; WebUI builders and parsers run under Node on captured output; WebUI rendered in Chromium with a stand-in `ksu.exec`, 2026-10-23. **Unverified** on a device |
-| Component lock | `components.lock.json` | Verified: Core `345fc7f` and FAS `1c453db` (merge commits on `dev`, trees identical to the tested PR heads), Tuning `0c226b2` (topic branch: Tuning has no default branch yet), module 0.3.1 (0.3.0's integrity manifest and WebUI through Core, plus the KernelSU-Next install fix), 2026-10-23 |
+| Component lock | `components.lock.json` | **Proposed, not yet released:** Core `377ba45` (Android component-path validation fix), FAS `1c453db`, Tuning `0c226b2`, module 0.3.2. Requires the Modules CI/release workflow and a post-install device check. |
 | Assembler | `scripts/assemble.py` | Verified with stand-in components (18 tests, incl. the GPL source requirement and `SHA256SUMS`), and on real arm64 components built locally with NDK r27d: zip of 26 entries, 2026-10-22. With 0.3.0, a zip from the earlier real arm64 builds (Core `8931cbb`, FAS `99cfb18`, Tuning `0c226b2`, assembled against a scratch lock naming those commits) has 32 entries and `sha256sum -c SHA256SUMS` and `verify.sh` pass on its extracted files, 2026-10-23 |
-| CI | `.github/workflows/ci.yml` | Verified on GitHub. Evidence: run 39827725469 (`298311c`), `module` job and checks green, 2026-10-22; the public components are checked out without a token |
+| CI | `.github/workflows/ci.yml` | The published v0.3.1 Release workflow run 40483942101 succeeded at Modules `a3efff6` (2026-10-27). The proposed v0.3.2 component-lock change must run CI and Release again before publication. |
 | Docs | `README.md`, `docs/` | Verified: files present |
 
 ## Key facts
@@ -49,13 +49,19 @@
   0.3.1 tests presence instead. Verified on the host: reproduced with files extracted at 0644,
   passing after the fix (`tests/test_scripts.py`). **Unverified** on the device until reinstalled.
 
-- Releases (0.3.0): `module.prop` has `updateJson` (latest GitHub release's `update.json`); the
-  assembler writes `update.json` and `changelog.md` next to the zip and puts `docs/README.md` and
-  `docs/CHANGELOG.md` in it; `.github/workflows/release.yml` builds at the locked commits and
-  creates a draft release. Verified on the host. Evidence: 42 tests; a zip from real arm64
-  components (Core `345fc7f`, FAS `1c453db`, Tuning `0c226b2`) with 34 entries, `SHA256SUMS`,
-  `update.json` and `module.prop` in agreement, 2026-10-23. **Unverified**: the workflow has never
-  run and no release exists.
+- Releases: `module.prop` has `updateJson` and the public v0.3.1 release is published. The
+  Release workflow run 40483942101 succeeded on 2026-10-27, building and checking the v0.3.1
+  artifact. The v0.3.2 change in this patch is not published or device-tested yet.
+
+## Tuning path diagnosis (2026-10-27)
+
+The user's KernelSU 3.4.1 screenshot shows module v0.3.1 with Core 0.1.0 reporting
+`PermissionRestricted` for `tuning.io_scheduler` and `tuning.gpu_governor`. Core's current `dev`
+commit `377ba4508321557f378d0188f05ff5c643ee62b4` contains a correction for Android's
+platform-managed `/data` ownership validation. The published v0.3.1 module still pins Core
+`345fc7f8c9e192c6a5b7d4e4f923f3b2b3cf33fb`; this patch advances that pin and the module to
+0.3.2. Tuning writes are still intentionally denied unless an exact-device hardware-validation
+profile authorizes them. A successful build does not substitute for a device retest.
 
 ## Authoritative sources
 

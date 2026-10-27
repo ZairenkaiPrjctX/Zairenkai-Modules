@@ -66,9 +66,15 @@ What changed: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-Nothing has run on a device. See [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md). Build and
-test: [docs/BUILDING.md](docs/BUILDING.md). Disable, uninstall, recovery:
-[docs/RECOVERY.md](docs/RECOVERY.md).
+A user has installed v0.3.1 on KernelSU 3.4.1, but the screenshot shows Core's Tuning capabilities
+reported as `PermissionRestricted`; this is not a completed runtime validation. The pending v0.3.2
+patch updates Core to include its Android `/data` ownership-validation fix. After a v0.3.2 build,
+reinstall/update and reboot, then collect `zcored discover`, `ztune capabilities`, and `ztune telemetry`
+from the read-only diagnostic script before considering Tuning validated. Writes remain disabled unless
+a device-exact hardware-tested profile authorizes them.
+
+See [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md). Build and test: [docs/BUILDING.md](docs/BUILDING.md).
+Disable, uninstall, recovery: [docs/RECOVERY.md](docs/RECOVERY.md).
 
 ## Licence
 

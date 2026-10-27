@@ -1,10 +1,22 @@
 # Changelog
 
+## [0.3.2] - unreleased
+
+### Fixed
+- Update the bundled Core to `377ba450` so its component-path validator accepts Android's
+  platform-managed `/data` ownership policy while still requiring the protected `/data/adb`
+  tree and executed component binaries to be root-owned and not group/other-writable. This fixes
+  a false `PermissionRestricted` result caused by the old Core build on affected Android builds.
+
+### Safety
+- Tuning remains fail-closed: I/O scheduler and GPU governor writes still require an exact-device,
+  hardware-validated authorization profile. This release does not add an allowlist or bypass SELinux.
+
 Every version of the zairenkai module, newest first. The release workflow publishes the entry of
 the version it builds as the release notes (and as `changelog.md`, which root managers show).
 The zip carries this file as `docs/CHANGELOG.md`.
 
-## [0.3.1] - unreleased
+## [0.3.1] - 2026-10-27 (published)
 
 ### Fixed
 - The installer no longer stops with "The package has no bin/zcored; it is incomplete" on
