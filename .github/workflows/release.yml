@@ -159,7 +159,7 @@ jobs:
           prop = dict(l.split("=", 1) for l in open("extracted/module.prop").read().splitlines() if "=" in l)
           assert u["version"] == prop["version"] == f"v{v}", (u, prop)
           assert u["versionCode"] == int(prop["versionCode"])
-          assert u["zipUrl"].endswith(f"/releases/download/v{v}/zairenkai-v{v}.zip")
+          assert u["zipUrl"].endswith(f"/releases/download/module-v{v}/zairenkai-v{v}.zip")
           assert prop["updateJson"].endswith("/releases/latest/download/update.json")
           print("update.json and module.prop agree:", u["version"], u["versionCode"])
           PY
