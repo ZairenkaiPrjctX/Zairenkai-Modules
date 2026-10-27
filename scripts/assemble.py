@@ -27,8 +27,8 @@ the zip the assembler writes update.json (version, versionCode, the release's zi
 URLs) and changelog.md (this version's CHANGELOG.md entry; a version without an entry fails).
 The zip also carries docs/README.md and docs/CHANGELOG.md.
 
-Usage: assemble.py [--lock components.lock.json] --component DIR [--component DIR ...]
-                   [--out dist]
+Usage: assemble.py [--lock components.lock.json] [--version MAJOR.MINOR.PATCH]
+                   [--release-notes-file FILE] --component DIR [--component DIR ...] [--out dist]
 Output: <out>/zairenkai-v<version>.zip, .zip.sha256, update.json and changelog.md
 """
 import argparse
@@ -44,7 +44,7 @@ TARGET = "aarch64-linux-android"
 LICENCE_FILES = ("LICENSE", "NOTICE", "THIRD_PARTY.md")
 SOURCE_INFO = "SOURCE.md"
 ZIP_DATE = (2000, 1, 1, 0, 0, 0)
-DEFAULT_REPOSITORY = "ZairenkaiPrjctX/Zairenkai-Modules"
+DEFAULT_RELEASE_REPOSITORY = "ZairenkaiPrjctX/Zairenkai-Release"
 SUMS = "SHA256SUMS"
 MAX_COMPONENT_FILE = 64 * 1024 * 1024
 
@@ -155,7 +155,15 @@ def repository(lock):
 
 def update_json_url(lock):
     """Stable URL root managers poll: update.json of the latest published (non-pre-) release."""
-    return f"https://github.com/{repository(lock)}/releases/latest/download/update.json"
+    return f"https://github.com/{release_repository(lock)}/releases/latest/download/update.json"
+
+
+def release_repository(lock):
+    """Central repository that publishes module and app build artifacts."""
+    repo = lock["module"].get("release_repository", DEFAULT_RELEASE_REPOSITORY)
+    if not re.fullmatch(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+", repo):
+        raise AssemblyError(f"module release repository {repo!r} is not owner/name")
+    return repo
 
 
 def changelog_entry(text, version):
@@ -178,7 +186,7 @@ def changelog_entry(text, version):
 def update_json(lock):
     """Magisk's (and KernelSU's, APatch's) update.json for this version's GitHub release."""
     m = lock["module"]
-    base = f"https://github.com/{repository(lock)}/releases/download/v{m['version']}"
+    base = f"https://github.com/{release_repository(lock)}/releases/download/module-v{m['version']}"
     doc = {
         "version": f"v{m['version']}",
         "versionCode": version_code(m["version"]),
@@ -289,8 +297,12 @@ def write_zip(path, files):
             z.writestr(info, data)
 
 
-def assemble(lock_path, component_dirs, out_dir):
+def assemble(lock_path, component_dirs, out_dir, version=None, release_notes_file=None):
     lock = load_lock(lock_path)
+    if version is not None:
+        if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+            raise AssemblyError(f"release version {version!r} is not MAJOR.MINOR.PATCH")
+        lock["module"]["version"] = version
     by_name = {}
     for d in component_dirs:
         manifest = Path(d) / "component.json"
@@ -306,7 +318,10 @@ def assemble(lock_path, component_dirs, out_dir):
     if missing := set(pinned) - set(by_name):
         raise AssemblyError(f"missing components: {sorted(missing)}")
     manifests = {n: check_component(by_name[n], pinned[n]) for n in pinned}
-    notes = changelog_entry((ROOT / "CHANGELOG.md").read_text(), lock["module"]["version"])
+    notes = (Path(release_notes_file).read_text(encoding="utf-8").strip() + "\n"
+             if release_notes_file else changelog_entry((ROOT / "CHANGELOG.md").read_text(), lock["module"]["version"]))
+    if not notes.strip():
+        raise AssemblyError("release notes must not be empty")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     zip_path = out / f"{lock['module']['id']}-v{lock['module']['version']}.zip"
@@ -322,10 +337,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Assemble the single Zairenkai root module.")
     ap.add_argument("--lock", default=str(ROOT / "components.lock.json"))
     ap.add_argument("--component", action="append", required=True, help="component directory")
+    ap.add_argument("--version", help="release version override for CI-generated builds")
+    ap.add_argument("--release-notes-file", help="release notes to embed for CI-generated builds")
     ap.add_argument("--out", default=str(ROOT / "dist"))
     a = ap.parse_args(argv)
     try:
-        zip_path, digest = assemble(a.lock, a.component, a.out)
+        zip_path, digest = assemble(a.lock, a.component, a.out, a.version, a.release_notes_file)
     except (AssemblyError, KeyError, ValueError, OSError) as e:
         print(f"assemble: {e}", file=sys.stderr)
         return 1

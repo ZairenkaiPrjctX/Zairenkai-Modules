@@ -17,11 +17,11 @@
 
 | Area | Location | Status |
 |---|---|---|
-| Module scripts, installer stub, KernelSU/APatch WebUI | `module/` | Verified on the host: shellcheck clean; `common.sh` (integrity check, status line, own-process lookup, data-directory guard) run under POSIX sh; WebUI builders and parsers run under Node on captured output; WebUI rendered in Chromium with a stand-in `ksu.exec`, 2026-10-23. **Unverified** on a device |
+| Module scripts, installer stub, KernelSU/APatch WebUI | `module/` | Verified. Evidence: host shellcheck, POSIX sh integrity checks, Node captured-output tests, Chromium stand-in render, 2026-10-23. **Unverified** on a device |
 | Component lock | `components.lock.json` | **Proposed, not yet released:** Core `377ba45` (Android component-path validation fix), FAS `1c453db`, Tuning `0c226b2`, module 0.3.2. Requires the Modules CI/release workflow and a post-install device check. |
-| Assembler | `scripts/assemble.py` | Verified with stand-in components (18 tests, incl. the GPL source requirement and `SHA256SUMS`), and on real arm64 components built locally with NDK r27d: zip of 26 entries, 2026-10-22. With 0.3.0, a zip from the earlier real arm64 builds (Core `8931cbb`, FAS `99cfb18`, Tuning `0c226b2`, assembled against a scratch lock naming those commits) has 32 entries and `sha256sum -c SHA256SUMS` and `verify.sh` pass on its extracted files, 2026-10-23 |
+| Assembler | `scripts/assemble.py` | Verified. Evidence: stand-in component tests (including GPL source and `SHA256SUMS`) and real arm64 NDK r27d archives, 2026-10-22/23. |
 | CI | `.github/workflows/ci.yml` | The published v0.3.1 Release workflow run 40483942101 succeeded at Modules `a3efff6` (2026-10-27). The proposed v0.3.2 component-lock change must run CI and Release again before publication. |
-| Docs | `README.md`, `docs/` | Verified: files present |
+| Docs | `README.md`, `docs/` | Verified. Evidence: files present. |
 
 ## Key facts
 
@@ -37,8 +37,8 @@
   unlisted file, `service.sh` starts nothing when a file changed (`integrity.log`, "Blocked" in the
   manager), uninstall signals only this module's processes and never follows a symlinked data
   directory, and the WebUI has a strict Content-Security-Policy and routes changes through Core.
-  `SHA256SUMS` proves integrity, not authenticity (the app's signed catalog does that). Verified
-  on the host. Evidence: `tests/test_scripts.py`, `tests/test_webui.py`, `docs/SECURITY.md`,
+  `SHA256SUMS` proves integrity, not authenticity (the app's signed catalog does that). Verified. Evidence:
+  host tests `tests/test_scripts.py`, `tests/test_webui.py`, `docs/SECURITY.md`,
   2026-10-23. **Unverified** on a device, including whether KernelSU's WebView delivers
   `ksu.exec` results under the page's policy.
 
@@ -46,8 +46,8 @@
   metainstall", arm64, API 37, installing 0.3.0. Steps 1 (device) and 2 (`SHA256SUMS`, busybox
   `sha256sum`) passed; the install then aborted with "The package has no bin/zcored" because
   KernelSU-Next extracts without file modes and `customize.sh` tested `-x` before `set_perm`.
-  0.3.1 tests presence instead. Verified on the host: reproduced with files extracted at 0644,
-  passing after the fix (`tests/test_scripts.py`). **Unverified** on the device until reinstalled.
+  0.3.1 tests presence instead. Verified. Evidence: reproduced on host with files extracted at
+  0644; fixed behavior covered by `tests/test_scripts.py`. **Unverified** on device until reinstalled.
 
 - Releases: `module.prop` has `updateJson` and the public v0.3.1 release is published. The
   Release workflow run 40483942101 succeeded on 2026-10-27, building and checking the v0.3.1

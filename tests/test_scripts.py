@@ -187,13 +187,17 @@ class HelpersTest(unittest.TestCase):
         self.assertEqual(oct((self.dir / "fresh/core").stat().st_mode & 0o777), "0o700")
 
     def test_own_pids_ignores_other_processes_with_the_same_name(self):
-        sleep = shutil.which("sleep")
+        # Keep an executable alive at two distinct paths. Copying the host's `sleep` binary and
+        # renaming it to zfasd is not portable: multicall coreutils resolves its applet from argv[0]
+        # and exits with "unknown program zfasd" on some runners.
+        executable = Path(sys.executable).resolve()
         mine, other = self.dir / "mod/bin/zfasd", self.dir / "other/bin/zfasd"
         for p in (mine, other):
             p.parent.mkdir(parents=True)
-            shutil.copy(sleep, p)
-        a = subprocess.Popen([str(mine), "30"])
-        b = subprocess.Popen([str(other), "30"])
+            shutil.copy(executable, p)
+        sleeper = ["-c", "import time; time.sleep(30)"]
+        a = subprocess.Popen([str(mine), *sleeper])
+        b = subprocess.Popen([str(other), *sleeper])
         try:
             time.sleep(0.3)
             r = sh('zr_own_pids zfasd "$1"', str(mine))

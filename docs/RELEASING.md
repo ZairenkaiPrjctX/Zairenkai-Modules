@@ -2,7 +2,7 @@
 
 ## What a release is
 
-A GitHub release `v<version>` of this repository with four files:
+A GitHub release `module-v<version>` of `Zairenkai-Release` with four files:
 
 | Asset | Used by |
 |---|---|
@@ -30,7 +30,7 @@ update, and reaches root managers directly through `updateJson`.
 
 ## Trust
 
-`updateJson` makes the GitHub repository the source of updates for people who install through a
+`updateJson` makes the central `Zairenkai-Release` repository the source of updates for people who install through a
 root manager: whoever can publish a release here can ship a module that runs as root. Keep
 release publishing restricted to maintainers, and branch protection on `dev`. Inside the zip,
 `SHA256SUMS` protects integrity on the device (`docs/SECURITY.md`); the app's installer
