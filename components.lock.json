@@ -5,30 +5,33 @@
     "name": "Zairenkai",
     "repository": "ZairenkaiPrjctX/Zairenkai-Modules",
     "release_repository": "ZairenkaiPrjctX/Zairenkai-Release",
-    "version": "0.3.2"
+    "version": "0.3.3"
   },
   "components": [
     {
       "name": "zairenkai-core",
       "repository": "ZairenkaiPrjctX/Zairenkai-Core",
-      "commit": "377ba4508321557f378d0188f05ff5c643ee62b4",
+      "commit": "25e308f1cd60217506cf45efb480c1b99800f3cc",
       "binary": "bin/zcored",
-      "summary": "zcored, the policy-driven control plane"
+      "summary": "zcored, the policy-driven control plane",
+      "branch": "dev"
     },
     {
       "name": "zairenkai-fas",
       "repository": "ZairenkaiPrjctX/Zairenkai-FAS",
-      "commit": "1c453db5b2ac6a49b18627408928d30ba51e063f",
+      "commit": "3af15a15a740bdfa50ba04a6b881f126450cbf15",
       "binary": "bin/zfasd",
-      "summary": "zfasd, frame-aware CPU frequency floors"
+      "summary": "zfasd, frame-aware CPU frequency floors",
+      "branch": "dev"
     },
     {
       "name": "zairenkai-tuning",
       "repository": "ZairenkaiPrjctX/Zairenkai-Tuning",
-      "commit": "0c226b27771c0e0274feb6435b36c8d90487a814",
+      "commit": "1bd9c497a2f783f188cd7cfa02b69047a71b85af",
       "binary": "bin/ztune",
       "license": "GPL-3.0-only",
-      "summary": "ztune, telemetry and validated tuning (GPL-3.0)"
+      "summary": "ztune, telemetry and validated tuning (GPL-3.0)",
+      "branch": "dev"
     }
   ]
 }
