@@ -1,3 +1,8 @@
+## [0.3.3] - unreleased
+
+### Changed
+- Refresh Core, FAS and Tuning pins from their reviewed `dev` branch heads; this module version is a new immutable build candidate.
+
 # Changelog
 
 ## [0.3.2] - unreleased
